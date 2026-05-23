@@ -1,11 +1,14 @@
 {
-  "extends": "@techia/tsconfig/base.json",
+  "extends": "../../packages/tsconfig/base.json",
   "compilerOptions": {
     "rootDir": "./src",
     "outDir": "./dist",
     "declaration": true,
     "declarationMap": true,
-    "lib": ["ES2022"]
+    "lib": ["ES2022"],
+    "target": "ES2022",
+    "module": "commonjs",
+    "tsBuildInfoFile": "./dist/.tsbuildinfo"
   },
   "include": ["src"],
   "exclude": ["node_modules", "dist"]
