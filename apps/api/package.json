@@ -1,0 +1,23 @@
+{
+  "name": "@techia/api",
+  "version": "1.0.0",
+  "private": true,
+  "main": "./dist/server.js",
+  "types": "./dist/server.d.ts",
+  "scripts": {
+    "dev": "tsx watch src/server.ts",
+    "build": "tsc",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint src"
+  },
+  "dependencies": {
+    "fastify": "^5.8.5"
+  },
+  "devDependencies": {
+    "@types/node": "^20.19.41",
+    "@types/eslint": "^8.56.0",
+    "eslint": "^9",
+    "tsx": "^4.22.3",
+    "typescript": "^6.0.3"
+  }
+}
