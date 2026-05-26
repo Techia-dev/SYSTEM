@@ -36,6 +36,7 @@ enum CandidateLevel {
   lead
 }
 
+
 // ============================================================
 // OFFER
 // كان في Firebase كـ "offers" collection
