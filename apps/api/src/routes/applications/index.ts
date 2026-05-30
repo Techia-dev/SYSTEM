@@ -1,19 +1,24 @@
 import { FastifyPluginAsync } from "fastify";
-import { ApplicationStatus } from "@prisma/client";
+import type {
+    CreateApplicationDto,
+    UpdateApplicationStatusDto,
+    CreateApplicationResponse,
+    UpdateStatusResponse,
+} from "@techia/types";
 
 // ============================================================
-// Applications Routes (Fully Secured & Optimized)
+// Applications Routes
 //
-// GET  /api/applications            → list all applications
-// GET  /api/applications/:id        → get single application
-// POST /api/applications            → create application
+// GET  /api/applications              → list all
+// GET  /api/applications/:id          → get single
+// POST /api/applications              → create
 // PUT  /api/applications/:id/status   → update status + auto commission
 // ============================================================
 
 const applicationRoutes: FastifyPluginAsync = async (fastify) => {
 
-    // ── GET /api/applications ──────────────────────────────────
-    fastify.get("/", async (request, reply) => {
+    // ── GET /api/applications ────────────────────────────────
+    fastify.get("/", async (_request, reply) => {
         const applications = await fastify.prisma.application.findMany({
             orderBy: { createdAt: "desc" },
             include: {
@@ -29,7 +34,7 @@ const applicationRoutes: FastifyPluginAsync = async (fastify) => {
         return reply.send(applications);
     });
 
-    // ── GET /api/applications/:id ──────────────────────────────
+    // ── GET /api/applications/:id ────────────────────────────
     fastify.get<{ Params: { id: string } }>(
         "/:id",
         async (request, reply) => {
@@ -55,15 +60,8 @@ const applicationRoutes: FastifyPluginAsync = async (fastify) => {
         }
     );
 
-    // ── POST /api/applications ─────────────────────────────────
-    fastify.post<{
-        Body: {
-            candidateId: string;
-            offerId: string;
-            source?: string;
-            assignedTo?: string;
-        };
-    }>(
+    // ── POST /api/applications ───────────────────────────────
+    fastify.post<{ Body: CreateApplicationDto }>(
         "/",
         {
             schema: {
@@ -82,14 +80,15 @@ const applicationRoutes: FastifyPluginAsync = async (fastify) => {
         async (request, reply) => {
             const { candidateId, offerId, source, assignedTo } = request.body;
 
-            // التحقق من وجود الـ Candidate والـ Offer في قاعدة البيانات أولاً لمنع أخطاء العلاقات
-            const candidate = await fastify.prisma.candidate.findUnique({ where: { id: candidateId } });
-            const offer = await fastify.prisma.offer.findUnique({ where: { id: offerId } });
+            const [candidate, offer] = await Promise.all([
+                fastify.prisma.candidate.findUnique({ where: { id: candidateId } }),
+                fastify.prisma.offer.findUnique({ where: { id: offerId } }),
+            ]);
 
             if (!candidate || !offer) {
                 return reply.status(400).send({
                     success: false,
-                    error: "Either Candidate or Offer ID is invalid and does not exist.",
+                    error: !candidate ? "Candidate not found" : "Offer not found",
                 });
             }
 
@@ -103,18 +102,20 @@ const applicationRoutes: FastifyPluginAsync = async (fastify) => {
                 },
             });
 
-            return reply.status(201).send({
+            const response: CreateApplicationResponse = {
                 id: application.id,
                 message: "Application created successfully",
-            });
+            };
+
+            return reply.status(201).send(response);
         }
     );
 
-    // ── PUT /api/applications/:id/status ──────────────────────
-    // ⭐ عند تحويل الحالة إلى accepted يتم توليد العمولة تلقائياً بأمان عبر Transaction
+    // ── PUT /api/applications/:id/status ─────────────────────
+    // عند accepted → ينشئ commission تلقائياً عبر transaction
     fastify.put<{
         Params: { id: string };
-        Body: { status: ApplicationStatus };
+        Body: UpdateApplicationStatusDto;
     }>(
         "/:id/status",
         {
@@ -140,7 +141,6 @@ const applicationRoutes: FastifyPluginAsync = async (fastify) => {
             const { id } = request.params;
             const { status } = request.body;
 
-            // 1. جلب الطلب والعرض المرتبط به بشكل آمن للتحقق من وجوده
             const application = await fastify.prisma.application.findUnique({
                 where: { id },
                 include: { offer: true },
@@ -149,22 +149,13 @@ const applicationRoutes: FastifyPluginAsync = async (fastify) => {
             if (!application) {
                 return reply.status(404).send({
                     success: false,
-                    error: "Application not found in database",
+                    error: "Application not found",
                 });
             }
 
-            // 2. إذا كانت الحالة 'accepted' نقوم بعمل تحديث وإنشاء عمولة داخل Transaction آمن
             if (status === "accepted") {
-                const offer = application.offer;
+                const { offer } = application;
 
-                if (!offer) {
-                    return reply.status(400).send({
-                        success: false,
-                        error: "This application does not have a valid offer attached to it.",
-                    });
-                }
-
-                // نتحقق إذا كانت العمولة قد أُنشئت بالفعل سابقاً لمنع التكرار
                 const existingCommission = await fastify.prisma.commission.findUnique({
                     where: { applicationId: id },
                 });
@@ -173,7 +164,6 @@ const applicationRoutes: FastifyPluginAsync = async (fastify) => {
                     const dueDate = new Date();
                     dueDate.setDate(dueDate.getDate() + offer.commissionDelay);
 
-                    // تشغيل العمليتين معاً بحسم وأمان
                     await fastify.prisma.$transaction([
                         fastify.prisma.application.update({
                             where: { id },
@@ -192,20 +182,26 @@ const applicationRoutes: FastifyPluginAsync = async (fastify) => {
                         }),
                     ]);
 
-                    return reply.send({
+                    const response: UpdateStatusResponse = {
                         success: true,
-                        message: "Status updated to accepted and commission generated successfully."
-                    });
+                        message: "Status updated to accepted and commission generated",
+                    };
+
+                    return reply.send(response);
                 }
             }
 
-            // 3. إذا كانت الحالة أي شيء آخر (أو العمولة موجودة بالفعل)، نكتفي بتحديث الحالة فقط
             await fastify.prisma.application.update({
                 where: { id },
                 data: { status },
             });
 
-            return reply.send({ success: true, message: `Status updated successfully to ${status}.` });
+            const response: UpdateStatusResponse = {
+                success: true,
+                message: `Status updated to ${status}`,
+            };
+
+            return reply.send(response);
         }
     );
 };

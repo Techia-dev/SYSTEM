@@ -1,36 +1,29 @@
 import { FastifyPluginAsync } from "fastify";
-import { CommissionStatus } from "@prisma/client";
+import type {
+    UpdateCommissionStatusDto,
+    UpdateCommissionResponse,
+} from "@techia/types";
 
 // ============================================================
 // Commissions Routes
 //
-// GET   /api/commissions              → list all commissions
-// GET   /api/commissions/:id          → get single commission
-// PATCH /api/commissions/:id/status   → update commission status
+// GET   /api/commissions              → list all
+// GET   /api/commissions/:id          → get single
+// PATCH /api/commissions/:id/status   → update status
 // ============================================================
 
 const commissionRoutes: FastifyPluginAsync = async (fastify) => {
 
-    // ─────────────────────────────────────────────
-    // GET ALL COMMISSIONS
-    // ─────────────────────────────────────────────
-    fastify.get("/", async (request, reply) => {
+    // ── GET /api/commissions ─────────────────────────────────
+    fastify.get("/", async (_request, reply) => {
         const commissions = await fastify.prisma.commission.findMany({
             orderBy: { createdAt: "desc" },
             include: {
                 candidate: {
-                    select: {
-                        id: true,
-                        name: true,
-                        phone: true,
-                    },
+                    select: { id: true, name: true, phone: true },
                 },
                 offer: {
-                    select: {
-                        id: true,
-                        title: true,
-                        company: true,
-                    },
+                    select: { id: true, title: true, company: true },
                 },
             },
         });
@@ -38,9 +31,7 @@ const commissionRoutes: FastifyPluginAsync = async (fastify) => {
         return reply.send(commissions);
     });
 
-    // ─────────────────────────────────────────────
-    // GET COMMISSION BY ID
-    // ─────────────────────────────────────────────
+    // ── GET /api/commissions/:id ─────────────────────────────
     fastify.get<{ Params: { id: string } }>(
         "/:id",
         async (request, reply) => {
@@ -52,11 +43,7 @@ const commissionRoutes: FastifyPluginAsync = async (fastify) => {
                     candidate: true,
                     offer: true,
                     application: {
-                        select: {
-                            id: true,
-                            status: true,
-                            source: true,
-                        },
+                        select: { id: true, status: true, source: true },
                     },
                 },
             });
@@ -72,12 +59,10 @@ const commissionRoutes: FastifyPluginAsync = async (fastify) => {
         }
     );
 
-    // ─────────────────────────────────────────────
-    // UPDATE COMMISSION STATUS
-    // ─────────────────────────────────────────────
+    // ── PATCH /api/commissions/:id/status ────────────────────
     fastify.patch<{
         Params: { id: string };
-        Body: { status: CommissionStatus };
+        Body: UpdateCommissionStatusDto;
     }>(
         "/:id/status",
         {
@@ -85,9 +70,7 @@ const commissionRoutes: FastifyPluginAsync = async (fastify) => {
                 params: {
                     type: "object",
                     required: ["id"],
-                    properties: {
-                        id: { type: "string" },
-                    },
+                    properties: { id: { type: "string" } },
                 },
                 body: {
                     type: "object",
@@ -105,23 +88,18 @@ const commissionRoutes: FastifyPluginAsync = async (fastify) => {
             const { id } = request.params;
             const { status } = request.body;
 
-            try {
-                const commission = await fastify.prisma.commission.update({
-                    where: { id },
-                    data: { status },
-                });
+            const commission = await fastify.prisma.commission.update({
+                where: { id },
+                data: { status },
+            });
 
-                return reply.send({
-                    id: commission.id,
-                    status: commission.status,
-                    message: `Commission marked as ${status}`,
-                });
-            } catch (error) {
-                return reply.status(404).send({
-                    success: false,
-                    error: "Commission not found or update failed",
-                });
-            }
+            const response: UpdateCommissionResponse = {
+                id: commission.id,
+                status: commission.status,
+                message: `Commission marked as ${status}`,
+            };
+
+            return reply.send(response);
         }
     );
 };

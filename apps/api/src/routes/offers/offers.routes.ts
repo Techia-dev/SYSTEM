@@ -1,19 +1,24 @@
 import { FastifyPluginAsync } from "fastify";
+import type {
+    CreateOfferDto,
+    UpdateOfferDto,
+    CreateOfferResponse,
+} from "@techia/types";
 
 // ============================================================
 // Offers Routes
 //
-// GET    /api/offers          → list all offers
-// GET    /api/offers/:id      → get single offer
-// POST   /api/offers          → create offer
-// PUT    /api/offers/:id      → update offer
-// DELETE /api/offers/:id      → soft delete (isActive = false)
+// GET    /api/offers      → list all
+// GET    /api/offers/:id  → get single
+// POST   /api/offers      → create
+// PUT    /api/offers/:id  → update proplem with intrfce types&wait for test
+// DELETE /api/offers/:id  → soft delete (isActive = false)
 // ============================================================
 
 const offerRoutes: FastifyPluginAsync = async (fastify) => {
 
-    // ── GET /api/offers ────────────────────────────────────────
-    fastify.get("/", async (request, reply) => {
+    // ── GET /api/offers ──────────────────────────────────────
+    fastify.get("/", async (_request, reply) => {
         const offers = await fastify.prisma.offer.findMany({
             orderBy: { createdAt: "desc" },
         });
@@ -21,7 +26,7 @@ const offerRoutes: FastifyPluginAsync = async (fastify) => {
         return reply.send(offers);
     });
 
-    // ── GET /api/offers/:id ────────────────────────────────────
+    // ── GET /api/offers/:id ──────────────────────────────────
     fastify.get<{ Params: { id: string } }>(
         "/:id",
         async (request, reply) => {
@@ -30,7 +35,6 @@ const offerRoutes: FastifyPluginAsync = async (fastify) => {
             const offer = await fastify.prisma.offer.findUnique({
                 where: { id },
                 include: {
-                    // عدد الـ applications على كل offer
                     _count: { select: { applications: true } },
                 },
             });
@@ -46,17 +50,8 @@ const offerRoutes: FastifyPluginAsync = async (fastify) => {
         }
     );
 
-    // ── POST /api/offers ───────────────────────────────────────
-    fastify.post<{
-        Body: {
-            title: string;
-            company?: string;
-            description?: string;
-            commission?: number;
-            commissionDelay?: number;
-            isActive?: boolean;
-        };
-    }>(
+    // ── POST /api/offers ─────────────────────────────────────
+    fastify.post<{ Body: CreateOfferDto }>(
         "/",
         {
             schema: {
@@ -95,24 +90,19 @@ const offerRoutes: FastifyPluginAsync = async (fastify) => {
                 },
             });
 
-            return reply.status(201).send({
+            const response: CreateOfferResponse = {
                 id: offer.id,
                 message: "Offer created",
-            });
+            };
+
+            return reply.status(201).send(response);
         }
     );
 
-    // ── PUT /api/offers/:id ────────────────────────────────────
+    // ── PUT /api/offers/:id ──────────────────────────────────
     fastify.put<{
         Params: { id: string };
-        Body: {
-            title?: string;
-            company?: string;
-            description?: string;
-            commission?: number;
-            commissionDelay?: number;
-            isActive?: boolean;
-        };
+        Body: UpdateOfferDto;
     }>(
         "/:id",
         {
@@ -120,9 +110,7 @@ const offerRoutes: FastifyPluginAsync = async (fastify) => {
                 params: {
                     type: "object",
                     required: ["id"],
-                    properties: {
-                        id: { type: "string" },
-                    },
+                    properties: { id: { type: "string" } },
                 },
                 body: {
                     type: "object",
@@ -140,7 +128,6 @@ const offerRoutes: FastifyPluginAsync = async (fastify) => {
         async (request, reply) => {
             const { id } = request.params;
 
-            // بنشيل الـ undefined fields عشان ما نـ overwrite حاجة مش اتبعتت
             const data = Object.fromEntries(
                 Object.entries(request.body).filter(([, v]) => v !== undefined)
             );
@@ -150,16 +137,14 @@ const offerRoutes: FastifyPluginAsync = async (fastify) => {
                 data,
             });
 
-            return reply.send({
-                id: offer.id,
-                message: "Offer updated",
-            });
+           
+
+          
         }
     );
 
-    // ── DELETE /api/offers/:id ─────────────────────────────────
-    // Soft delete — بنخلي isActive = false بدل ما نحذف
-    // عشان الـ applications والـ commissions القديمة ما تتأثرش
+    // ── DELETE /api/offers/:id ───────────────────────────────
+    // Soft delete — isActive = false
     fastify.delete<{ Params: { id: string } }>(
         "/:id",
         async (request, reply) => {

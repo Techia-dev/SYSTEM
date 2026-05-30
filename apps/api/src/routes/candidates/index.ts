@@ -1,25 +1,20 @@
+// apps/api/src/routes/candidates/index.ts
 import { FastifyPluginAsync } from "fastify";
 import type {
     CreateCandidateDto,
     CreateCandidateResponse,
-    Candidate,
 } from "@techia/types";
-
-// ============================================================
-// Candidates Routes
-//
-// GET  /api/candidates  → list all candidates
-// POST /api/candidates  → create candidate
-// ============================================================
 
 const candidateRoutes: FastifyPluginAsync = async (fastify) => {
 
     // ── GET /api/candidates ──────────────────────────────────
+    // قبل: const candidates: Candidate[] = await ...
+    //  بعد: خلّي TypeScript يـ infer نوع Prisma تلقائياً
     fastify.get("/", async (_request, reply) => {
-        const candidates: Candidate[] = await fastify.prisma.candidate.findMany({
+        const candidates = await fastify.prisma.candidate.findMany({
             orderBy: { createdAt: "desc" },
         });
-
+        // Fastify بيعمل JSON.stringify تلقائياً → Date تتحول لـ string
         return reply.send(candidates);
     });
 
