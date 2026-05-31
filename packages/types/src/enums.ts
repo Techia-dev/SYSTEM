@@ -1,5 +1,5 @@
 export type ApplicationStatus =
-| "applid"
+ | "applied"
 |"interview"
 |"accepted"
 |"rejected"
