@@ -1,6 +1,7 @@
 {
   "$schema": "https://turbo.build/schema.json",
   "globalEnv": ["NODE_ENV"],
+
   "tasks": {
     "build": {
       "dependsOn": ["^build"],
@@ -16,6 +17,11 @@
       "persistent": true
     },
 
+    "mobile#dev": {
+      "cache": false,
+      "persistent": true
+    },
+
     "lint": {
       "outputs": []
     },
@@ -25,13 +31,6 @@
       "outputs": []
     }
   },
-  "ui": "stream",
 
-
-  "pipeline": {
-    "mobile#dev": {
-      "cache": false,
-      "persistent": true
-    }
-  }
+  "ui": "stream"
 }
