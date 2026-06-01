@@ -4,6 +4,6 @@
 
 export * from "./Badge";
 export * from "./Button";
-export * from "./table";
+export * from "./Table";
 export * from "./Modal";
 export * from "./StatCard";
