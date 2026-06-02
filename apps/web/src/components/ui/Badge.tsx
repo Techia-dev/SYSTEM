@@ -79,11 +79,9 @@ export function ApplicationBadge({ status }: { status: ApplicationStatus }) {
         accepted: "Accepted",
         rejected: "Rejected",
     };
-    // تصحيح typo الموجود في الـ enum القديم "applid"
-    const normalized = status === ("applid" as ApplicationStatus) ? "applied" : status;
     return (
-        <Badge variant={normalized as BadgeVariant} dot>
-            {labels[normalized] ?? normalized}
+        <Badge variant={status as BadgeVariant} dot>
+            {labels[status] ?? status}
         </Badge>
     );
 }

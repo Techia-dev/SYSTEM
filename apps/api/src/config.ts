@@ -22,4 +22,4 @@ export const config = {
     corsOrigin: process.env.CORS_ORIGINS
         ?? process.env.CORS_ORIGIN
         ?? "http://localhost:3000",
-} as const;
+};

@@ -113,6 +113,13 @@ const applicationRoutes: FastifyPluginAsync = async (fastify) => {
 
     // ── PUT /api/applications/:id/status ─────────────────────
     // عند accepted → ينشئ commission تلقائياً عبر transaction
+    const validTransitions: Record<string, string[]> = {
+        applied: ["interview", "rejected"],
+        interview: ["accepted", "rejected"],
+        accepted: [],
+        rejected: [],
+    };
+
     fastify.put<{
         Params: { id: string };
         Body: UpdateApplicationStatusDto;
@@ -153,16 +160,22 @@ const applicationRoutes: FastifyPluginAsync = async (fastify) => {
                 });
             }
 
-            if (status === "accepted") {
-                const { offer } = application;
+            const allowed = validTransitions[application.status];
+            if (!allowed.includes(status)) {
+                return reply.status(400).send({
+                    success: false,
+                    error: `Cannot transition from "${application.status}" to "${status}"`,
+                });
+            }
 
+            if (status === "accepted") {
                 const existingCommission = await fastify.prisma.commission.findUnique({
                     where: { applicationId: id },
                 });
 
                 if (!existingCommission) {
                     const dueDate = new Date();
-                    dueDate.setDate(dueDate.getDate() + offer.commissionDelay);
+                    dueDate.setDate(dueDate.getDate() + application.offer.commissionDelay);
 
                     await fastify.prisma.$transaction([
                         fastify.prisma.application.update({
@@ -172,9 +185,9 @@ const applicationRoutes: FastifyPluginAsync = async (fastify) => {
                         fastify.prisma.commission.create({
                             data: {
                                 applicationId: id,
-                                offerId: offer.id,
+                                offerId: application.offer.id,
                                 candidateId: application.candidateId,
-                                amount: offer.commission,
+                                amount: application.offer.commission,
                                 status: "pending",
                                 earnedAt: new Date(),
                                 dueDate,

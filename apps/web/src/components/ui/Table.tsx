@@ -128,7 +128,7 @@ export function TableEmpty({
                 <td colSpan={cols} className="px-4 py-14 text-center">
                     <div className="flex flex-col items-center gap-2">
                         {icon && (
-                            <span className="text-zinc-300 text-4xl" aria-hidden="true">
+                            <span className="text-zinc-300" aria-hidden="true">
                                 {icon}
                             </span>
                         )}

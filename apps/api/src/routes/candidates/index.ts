@@ -8,13 +8,10 @@ import type {
 const candidateRoutes: FastifyPluginAsync = async (fastify) => {
 
     // ── GET /api/candidates ──────────────────────────────────
-    // قبل: const candidates: Candidate[] = await ...
-    //  بعد: خلّي TypeScript يـ infer نوع Prisma تلقائياً
     fastify.get("/", async (_request, reply) => {
         const candidates = await fastify.prisma.candidate.findMany({
             orderBy: { createdAt: "desc" },
         });
-        // Fastify بيعمل JSON.stringify تلقائياً → Date تتحول لـ string
         return reply.send(candidates);
     });
 

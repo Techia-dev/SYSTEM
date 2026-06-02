@@ -101,6 +101,9 @@ model Application {
   candidateId  String
   offerId      String
 
+  @@index([candidateId])
+  @@index([offerId])
+
   status       ApplicationStatus @default(applied)
 
   // مصدر التوظيف (LinkedIn, Referral, إلخ)
@@ -135,6 +138,9 @@ model Commission {
   applicationId String           @unique   // unique: commission واحدة لكل application
   offerId       String
   candidateId   String
+
+  @@index([offerId])
+  @@index([candidateId])
 
   amount        Float            @default(0)
   status        CommissionStatus @default(pending)

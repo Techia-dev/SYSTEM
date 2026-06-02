@@ -43,17 +43,6 @@ export function formatCurrency(amount: number): string {
     }).format(amount);
 }
 
-// ── formatDate ────────────────────────────────────────────────
-// تنسيق التاريخ — بيستخدم الـ ISO string اللي بييجي من الـ API
-
-export function formatDate(dateString: string): string {
-    return new Intl.DateTimeFormat("en-EG", {
-        year: "numeric",
-        month: "short",
-        day: "numeric",
-    }).format(new Date(dateString));
-}
-
 // ── isDueOverdue ──────────────────────────────────────────────
 // تشيك إذا كان الـ dueDate فات
 

@@ -1,7 +1,8 @@
 // apps/api/src/plugins/cors.ts
+import fp from "fastify-plugin";
 import { FastifyInstance } from "fastify";
 
-export default async function corsPlugin(fastify: FastifyInstance) {
+async function corsPlugin(fastify: FastifyInstance) {
     // دعم origin واحد أو قائمة مفصولة بفاصلة
     const rawOrigins = process.env.CORS_ORIGINS
         ?? process.env.CORS_ORIGIN
@@ -40,3 +41,5 @@ export default async function corsPlugin(fastify: FastifyInstance) {
         }
     });
 }
+
+export default fp(corsPlugin);

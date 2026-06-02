@@ -11,7 +11,7 @@ import type {
 // GET    /api/offers      → list all
 // GET    /api/offers/:id  → get single
 // POST   /api/offers      → create
-// PUT    /api/offers/:id  → update proplem with intrfce types&wait for test
+// PUT    /api/offers/:id  → update
 // DELETE /api/offers/:id  → soft delete (isActive = false)
 // ============================================================
 
@@ -128,6 +128,17 @@ const offerRoutes: FastifyPluginAsync = async (fastify) => {
         async (request, reply) => {
             const { id } = request.params;
 
+            const existing = await fastify.prisma.offer.findUnique({
+                where: { id },
+            });
+
+            if (!existing) {
+                return reply.status(404).send({
+                    success: false,
+                    error: "Offer not found",
+                });
+            }
+
             const data = Object.fromEntries(
                 Object.entries(request.body).filter(([, v]) => v !== undefined)
             );
@@ -137,9 +148,7 @@ const offerRoutes: FastifyPluginAsync = async (fastify) => {
                 data,
             });
 
-           
-
-          
+            return reply.send(offer);
         }
     );
 

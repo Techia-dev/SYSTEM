@@ -1,21 +1,14 @@
 import fp from "fastify-plugin";
 import { FastifyInstance } from "fastify";
-import { PrismaClient } from "@prisma/client";
+import { prisma } from "@techia/db";
 
 declare module "fastify" {
     interface FastifyInstance {
-        prisma: PrismaClient;
+        prisma: typeof prisma;
     }
 }
 
 async function databasePlugin(fastify: FastifyInstance) {
-    const prisma = new PrismaClient({
-        log:
-            process.env.NODE_ENV === "development"
-                ? ["query", "error", "warn"]
-                : ["error"],
-    });
-
     await prisma.$connect();
 
     fastify.decorate("prisma", prisma);

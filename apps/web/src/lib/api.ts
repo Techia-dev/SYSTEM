@@ -13,7 +13,6 @@ import type {
     CreateOfferDto,
     UpdateOfferDto,
     CreateOfferResponse,
-    Application,
     ApplicationWithRelations,
     ApplicationFull,
     CreateApplicationDto,

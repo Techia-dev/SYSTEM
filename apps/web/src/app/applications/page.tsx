@@ -83,11 +83,7 @@ export default function ApplicationsPage() {
   }, []);
 
   useEffect(() => {
-    const id = window.setTimeout(() => {
-      void load();
-    }, 0);
-
-    return () => window.clearTimeout(id);
+    void load();
   }, [load]);
 
   const filtered = useMemo(() => {
@@ -216,7 +212,7 @@ export default function ApplicationsPage() {
         {loading ? (
           <TableSkeleton cols={7} />
         ) : filtered.length === 0 ? (
-          <TableEmpty cols={7} message="No applications found" icon="📄" />
+          <TableEmpty cols={7} message="No applications found" />
         ) : (
           <TableBody>
             {filtered.map((a) => (

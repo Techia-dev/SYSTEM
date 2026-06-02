@@ -50,11 +50,7 @@ export default function CandidatesPage() {
   }, []);
 
   useEffect(() => {
-    const timer = setTimeout(() => {
-      void load();
-    }, 0);
-
-    return () => clearTimeout(timer);
+    void load();
   }, [load]);
   const filtered = useMemo(() => {
     const term = search.trim().toLowerCase();
@@ -150,7 +146,7 @@ export default function CandidatesPage() {
         {loading ? (
           <TableSkeleton cols={5} />
         ) : filtered.length === 0 ? (
-          <TableEmpty cols={5} message="No candidates found" icon="👤" />
+          <TableEmpty cols={5} message="No candidates found" />
         ) : (
           <TableBody>
             {filtered.map((c) => (

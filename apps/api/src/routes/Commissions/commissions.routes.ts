@@ -4,14 +4,6 @@ import type {
     UpdateCommissionResponse,
 } from "@techia/types";
 
-// ============================================================
-// Commissions Routes
-//
-// GET   /api/commissions              → list all
-// GET   /api/commissions/:id          → get single
-// PATCH /api/commissions/:id/status   → update status
-// ============================================================
-
 const commissionRoutes: FastifyPluginAsync = async (fastify) => {
 
     // ── GET /api/commissions ─────────────────────────────────

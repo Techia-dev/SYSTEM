@@ -1,6 +1,6 @@
 "use client";
 
-import { useState,useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { PageShell } from "@/components/layout/Sidebar";
 import {
   Table, TableHead, Th, TableBody, Tr, Td,
@@ -54,11 +54,7 @@ export default function OffersPage() {
 
 
   useEffect(() => {
-    const timer = setTimeout(() => {
-      void load();
-    }, 0);
-
-    return () => clearTimeout(timer);
+    void load();
   }, [load]);
 
   const filtered = offers.filter((o) => {
@@ -193,7 +189,7 @@ export default function OffersPage() {
         {loading ? (
           <TableSkeleton cols={7} />
         ) : filtered.length === 0 ? (
-          <TableEmpty cols={7} message="No offers found" icon="💼" />
+          <TableEmpty cols={7} message="No offers found" />
         ) : (
           <TableBody>
             {filtered.map((o) => (
@@ -280,8 +276,7 @@ export default function OffersPage() {
         title="Deactivate offer" size="sm"
         description={deactTarget ? `Are you sure you want to deactivate "${deactTarget.title}"?` : ""}>
         <p className="text-sm text-zinc-500">
-          The offer will be hidden from new applications. Existing applications 
-        .
+          The offer will be hidden from new applications. Existing applications will not be affected.
         </p>
         <ModalFooter onCancel={() => setDeactOpen(false)} onConfirm={handleDeact}
           confirmLabel="Deactivate" confirmVariant="danger" loading={deactSaving} />
