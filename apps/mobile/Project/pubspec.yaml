@@ -1,0 +1,45 @@
+name: techia_ats
+description: Techia Applicant Tracking System - A modern ATS built with Flutter.
+version: 1.0.0+1
+
+environment:
+  sdk: ">=3.0.0 <4.0.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  # State management
+  provider: ^6.1.2
+
+  # HTTP client
+  http: ^1.2.1
+
+  # Local storage
+  shared_preferences: ^2.3.2
+
+  # Date formatting
+  intl: ^0.19.0
+
+  # Icons (optional - Flutter has Material icons built in)
+  # cupertino_icons: ^1.0.8
+
+flutter:
+  uses-material-design: true
+
+  fonts:
+    - family: Inter
+      fonts:
+        - asset: assets/fonts/Inter/Inter_18pt-Regular.ttf
+          weight: 400
+        - asset: assets/fonts/Inter/Inter_18pt-Medium.ttf
+          weight: 500
+        - asset: assets/fonts/Inter/Inter_18pt-SemiBold.ttf
+          weight: 600
+        - asset: assets/fonts/Inter/Inter_18pt-Bold.ttf
+          weight: 700
+        - asset: assets/fonts/Inter/Inter_18pt-ExtraBoldItalic.ttf
+          weight: 800
+
+  assets:
+    - assets/images/
