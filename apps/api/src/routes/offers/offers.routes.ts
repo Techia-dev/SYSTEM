@@ -159,6 +159,17 @@ const offerRoutes: FastifyPluginAsync = async (fastify) => {
         async (request, reply) => {
             const { id } = request.params;
 
+            const existing = await fastify.prisma.offer.findUnique({
+                where: { id },
+            });
+
+            if (!existing) {
+                return reply.status(404).send({
+                    success: false,
+                    error: "Offer not found",
+                });
+            }
+
             await fastify.prisma.offer.update({
                 where: { id },
                 data: { isActive: false },
