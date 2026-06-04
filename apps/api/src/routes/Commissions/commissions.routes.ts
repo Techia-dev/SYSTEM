@@ -5,7 +5,7 @@ import type {
 } from "@techia/types";
 
 const commissionRoutes: FastifyPluginAsync = async (fastify) => {
-    fastify.addHook("onRequest", fastify.authenticate);
+    fastify.addHook("onRequest", fastify.requirePermission("commissions:read"));
 
     // ── GET /api/commissions ─────────────────────────────────
     fastify.get<{
@@ -82,6 +82,7 @@ const commissionRoutes: FastifyPluginAsync = async (fastify) => {
     }>(
         "/:id/status",
         {
+            preHandler: [fastify.requirePermission("commissions:write")],
             schema: {
                 params: {
                     type: "object",

@@ -1,38 +1,26 @@
-// apps/api/src/plugins/cors.ts
 import fp from "fastify-plugin";
 import { FastifyInstance } from "fastify";
+import { config } from "../config";
 
 async function corsPlugin(fastify: FastifyInstance) {
-    // دعم origin واحد أو قائمة مفصولة بفاصلة
-    const rawOrigins = process.env.CORS_ORIGINS
-        ?? process.env.CORS_ORIGIN
-        ?? "http://localhost:3000";
-
-    const allowedOrigins = rawOrigins
-        .split(",")
-        .map((o) => o.trim())
-        .filter(Boolean);
-
     fastify.addHook("onRequest", async (request, reply) => {
         const requestOrigin = request.headers.origin;
 
-        // السماح لـ Flutter mobile (مفيش origin header)
-        if (!requestOrigin) {
-            reply.header("Access-Control-Allow-Origin", "*");
-        } else if (
-            allowedOrigins.includes("*") ||
-            allowedOrigins.includes(requestOrigin)
+        if (
+            requestOrigin &&
+            (config.corsOrigins.includes("*") || config.corsOrigins.includes(requestOrigin))
         ) {
             reply.header("Access-Control-Allow-Origin", requestOrigin);
+            reply.header("Vary", "Origin");
         }
 
         reply.header(
             "Access-Control-Allow-Methods",
-            "GET,POST,PUT,PATCH,DELETE,OPTIONS"
+            "GET,POST,PUT,PATCH,DELETE,OPTIONS",
         );
         reply.header(
             "Access-Control-Allow-Headers",
-            "Content-Type,Authorization"
+            "Content-Type,Authorization",
         );
         reply.header("Access-Control-Allow-Credentials", "true");
 

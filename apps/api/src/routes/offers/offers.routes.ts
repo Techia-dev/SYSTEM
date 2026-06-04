@@ -16,7 +16,7 @@ import type {
 // ============================================================
 
 const offerRoutes: FastifyPluginAsync = async (fastify) => {
-    fastify.addHook("onRequest", fastify.authenticate);
+    fastify.addHook("onRequest", fastify.requirePermission("offers:read"));
 
     // ── GET /api/offers ──────────────────────────────────────
     fastify.get<{
@@ -72,6 +72,7 @@ const offerRoutes: FastifyPluginAsync = async (fastify) => {
     fastify.post<{ Body: CreateOfferDto }>(
         "/",
         {
+            preHandler: [fastify.requirePermission("offers:write")],
             schema: {
                 body: {
                     type: "object",
@@ -124,6 +125,7 @@ const offerRoutes: FastifyPluginAsync = async (fastify) => {
     }>(
         "/:id",
         {
+            preHandler: [fastify.requirePermission("offers:write")],
             schema: {
                 params: {
                     type: "object",
@@ -174,6 +176,7 @@ const offerRoutes: FastifyPluginAsync = async (fastify) => {
     // Soft delete — isActive = false
     fastify.delete<{ Params: { id: string } }>(
         "/:id",
+        { preHandler: [fastify.requirePermission("offers:write")] },
         async (request, reply) => {
             const { id } = request.params;
 

@@ -13,12 +13,14 @@
   "dependencies": {
     "@fastify/jwt": "^10.1.0",
     "@prisma/client": "^5.22.0",
+    "@techia/admin-api": "workspace:*",
     "@techia/db": "workspace:*",
     "@techia/types": "workspace:*",
     "bcryptjs": "^3.0.3",
     "dotenv": "^17.4.2",
     "fastify": "^5.8.5",
-    "fastify-plugin": "^5.1.0"
+    "fastify-plugin": "^5.1.0",
+    "zod": "^4.1.13"
   },
   "devDependencies": {
     "@types/bcryptjs": "^3.0.0",

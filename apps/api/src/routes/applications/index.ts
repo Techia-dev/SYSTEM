@@ -16,7 +16,7 @@ import type {
 // ============================================================
 
 const applicationRoutes: FastifyPluginAsync = async (fastify) => {
-    fastify.addHook("onRequest", fastify.authenticate);
+    fastify.addHook("onRequest", fastify.requirePermission("applications:read"));
 
     // ── GET /api/applications ────────────────────────────────
     fastify.get<{
@@ -88,6 +88,7 @@ const applicationRoutes: FastifyPluginAsync = async (fastify) => {
     fastify.post<{ Body: CreateApplicationDto }>(
         "/",
         {
+            preHandler: [fastify.requirePermission("applications:write")],
             schema: {
                 body: {
                     type: "object",
@@ -150,6 +151,7 @@ const applicationRoutes: FastifyPluginAsync = async (fastify) => {
     }>(
         "/:id/status",
         {
+            preHandler: [fastify.requirePermission("applications:status")],
             schema: {
                 params: {
                     type: "object",

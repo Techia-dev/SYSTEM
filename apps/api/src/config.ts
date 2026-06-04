@@ -1,26 +1,29 @@
-// ============================================================
-// Config — validates env vars at startup
-// فشل هنا أفضل من فشل وسط الـ runtime
-// ============================================================
+import { z } from "zod";
 
-function requireEnv(key: string): string {
-    const value = process.env[key];
-    if (!value) {
-        throw new Error(
-            `\n❌ Missing required environment variable: ${key}\n` +
-            `   Copy apps/api/.env.example to apps/api/.env and fill it in.\n`
-        );
-    }
-    return value;
-}
+const envSchema = z.object({
+    NODE_ENV: z.enum(["development", "test", "production"]).default("development"),
+    PORT: z.coerce.number().int().positive().default(4000),
+    HOST: z.string().min(1).default("0.0.0.0"),
+    DATABASE_URL: z.string().min(1),
+    JWT_SECRET: z.string().min(32),
+    JWT_ACCESS_TOKEN_TTL: z.string().default("15m"),
+    CORS_ORIGIN: z.string().optional(),
+    CORS_ORIGINS: z.string().optional(),
+});
+
+const env = envSchema.parse(process.env);
+
+const corsOriginsRaw = env.CORS_ORIGINS ?? env.CORS_ORIGIN ?? "";
 
 export const config = {
-    port: Number(process.env.PORT) || 4000,
-    host: process.env.HOST || "0.0.0.0",
-    nodeEnv: process.env.NODE_ENV || "development",
-    databaseUrl: requireEnv("DATABASE_URL"),
-    jwtSecret: requireEnv("JWT_SECRET"),
-    corsOrigin: process.env.CORS_ORIGINS
-        ?? process.env.CORS_ORIGIN
-        ?? "http://localhost:3000",
+    port: env.PORT,
+    host: env.HOST,
+    nodeEnv: env.NODE_ENV,
+    databaseUrl: env.DATABASE_URL,
+    jwtSecret: env.JWT_SECRET,
+    jwtAccessTokenTtl: env.JWT_ACCESS_TOKEN_TTL,
+    corsOrigins: corsOriginsRaw
+        .split(",")
+        .map((o) => o.trim())
+        .filter(Boolean),
 };
