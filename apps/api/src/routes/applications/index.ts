@@ -16,22 +16,46 @@ import type {
 // ============================================================
 
 const applicationRoutes: FastifyPluginAsync = async (fastify) => {
+    fastify.addHook("onRequest", fastify.authenticate);
 
     // ── GET /api/applications ────────────────────────────────
-    fastify.get("/", async (_request, reply) => {
-        const applications = await fastify.prisma.application.findMany({
-            orderBy: { createdAt: "desc" },
-            include: {
-                candidate: {
-                    select: { id: true, name: true, phone: true, level: true },
-                },
-                offer: {
-                    select: { id: true, title: true, company: true, commission: true },
-                },
-            },
-        });
+    fastify.get<{
+        Querystring: { page?: string; page_size?: string; status?: string };
+    }>("/", async (request, reply) => {
+        const queryPage = Math.max(1, Number(request.query.page) || 1);
+        const pageSize = Math.min(100, Math.max(1, Number(request.query.page_size) || 50));
+        const skip = (queryPage - 1) * pageSize;
 
-        return reply.send(applications);
+        const where: Record<string, unknown> = {};
+        if (request.query.status) {
+            where.status = request.query.status;
+        }
+
+        const [applications, total] = await Promise.all([
+            fastify.prisma.application.findMany({
+                where,
+                orderBy: { createdAt: "desc" },
+                skip,
+                take: pageSize,
+                include: {
+                    candidate: {
+                        select: { id: true, name: true, phone: true, level: true },
+                    },
+                    offer: {
+                        select: { id: true, title: true, company: true, commission: true },
+                    },
+                },
+            }),
+            fastify.prisma.application.count({ where }),
+        ]);
+
+        return reply.send({
+            data: applications,
+            total,
+            page: queryPage,
+            page_size: pageSize,
+            total_pages: Math.ceil(total / pageSize),
+        });
     });
 
     // ── GET /api/applications/:id ────────────────────────────

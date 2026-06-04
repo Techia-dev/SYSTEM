@@ -20,17 +20,18 @@
     "db:migrate:prod": "prisma migrate deploy",
     "db:push": "prisma db push",
     "db:studio": "prisma studio"
-  
   },
   "prisma": {
     "schema": "prisma/schema.prisma",
     "seed": "tsx src/seed.ts"
   },
   "dependencies": {
-    "@prisma/client": "^5.22.0"
+    "@prisma/client": "^5.22.0",
+    "bcryptjs": "^3.0.3"
   },
   "devDependencies": {
     "@techia/tsconfig": "workspace:*",
+    "@types/bcryptjs": "^3.0.0",
     "prisma": "^5.22.0",
     "tsx": "^4.22.3",
     "typescript": "^6.0.3"

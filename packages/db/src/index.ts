@@ -12,6 +12,7 @@ export type {
     Application,
     Commission,
     Offer,
+    User,
     ApplicationStatus,
     CommissionStatus,
     CandidateLevel,

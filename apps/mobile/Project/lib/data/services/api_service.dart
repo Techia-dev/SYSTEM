@@ -81,6 +81,36 @@ class ApiService {
     }
   }
 
+  Future<dynamic> put(String path, {Map<String, dynamic>? body}) async {
+    try {
+      final response = await _client
+          .put(
+            _buildUri(path),
+            headers: _headers,
+            body: body != null ? jsonEncode(body) : null,
+          )
+          .timeout(const Duration(seconds: 30));
+      return _handleResponse(response);
+    } on ApiException {
+      rethrow;
+    } catch (e) {
+      throw ApiException('Network error: ${e.toString()}');
+    }
+  }
+
+  Future<dynamic> delete(String path) async {
+    try {
+      final response = await _client
+          .delete(_buildUri(path), headers: _headers)
+          .timeout(const Duration(seconds: 30));
+      return _handleResponse(response);
+    } on ApiException {
+      rethrow;
+    } catch (e) {
+      throw ApiException('Network error: ${e.toString()}');
+    }
+  }
+
   dynamic _handleResponse(http.Response response) {
     final body = response.body.isNotEmpty
         ? jsonDecode(response.body)

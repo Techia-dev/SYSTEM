@@ -38,6 +38,24 @@ enum CandidateLevel {
 
 
 // ============================================================
+// USER
+// مستخدمي النظام (recruiters, admins)
+// ============================================================
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  password  String
+  name      String?
+  role      String   @default("user") // user | admin
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("users")
+}
+
+// ============================================================
 // OFFER
 // كان في Firebase كـ "offers" collection
 // يحتوي على تفاصيل العمولة والوظيفة

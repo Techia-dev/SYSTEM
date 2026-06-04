@@ -1,6 +1,7 @@
 // This is a generated file; do not edit or check into version control.
-FLUTTER_ROOT=D:\Sphinx\src\flutter
-FLUTTER_APPLICATION_PATH=C:\Users\sphinx_Mohsen\StudioProjects\SYSTEM\apps\mobile\system
+FLUTTER_ROOT=D:\mohmad\programing\Techia\techia-monorepo\flutter
+FLUTTER_APPLICATION_PATH=D:\mohmad\programing\Techia\techia-monorepo\apps\mobile\Project
+FLUTTER_FRAMEWORK_SWIFT_PACKAGE_PATH=D:\mohmad\programing\Techia\techia-monorepo\apps\mobile\Project\ios\Flutter\ephemeral\Packages\.packages\FlutterFramework
 COCOAPODS_PARALLEL_CODE_SIGN=true
 FLUTTER_TARGET=lib\main.dart
 FLUTTER_BUILD_DIR=build

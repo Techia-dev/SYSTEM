@@ -1,9 +1,13 @@
 class AppConstants {
   // API
-  static const String baseUrl = 'apps/api — localhost:4000';
+  static const String baseUrl = 'http://localhost:4000';
   static const String apiCandidates = '/api/candidates';
+  static const String apiApplications = '/api/applications';
+  static const String apiOffers = '/api/offers';
+  static const String apiCommissions = '/api/commissions';
   static const String apiLogin = '/api/auth/login';
   static const String apiLogout = '/api/auth/logout';
+  static const String apiMe = '/api/auth/me';
   static const String apiAdvanceStage = '/api/candidates/{id}/advance';
 
   // Pipeline Stages
@@ -47,7 +51,7 @@ class AppConstants {
 
   // App info
   static const String appName = 'Techia ATS';
-  static const String appTagline = 'SHIP Small Things Every Single Day 🚀';
+  static const String appTagline = 'Ship Small Things Every Single Day';
   static const String appVersion = '1.0.0';
   static const String appBuild = 'BUILD DEVELOP RUN';
   static const String appOrg = 'TECHIA';

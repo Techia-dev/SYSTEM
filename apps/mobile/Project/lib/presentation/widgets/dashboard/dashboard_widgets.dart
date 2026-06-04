@@ -313,7 +313,7 @@ class _DropdownFilter extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return DropdownButtonFormField<String>(
-      value: value,
+      initialValue: value,
       style: AppTextStyles.bodyMedium.copyWith(color: AppColors.textPrimary),
       dropdownColor: AppColors.bgCardElevated,
       decoration: const InputDecoration(),

@@ -39,8 +39,8 @@ class _LoginScreenState extends State<LoginScreen> {
 
   Future<void> _handleDemoLogin() async {
     setState(() => _isDemo = true);
-    _emailController.text = 'test@test.com';
-    _passwordController.text = 'demo';
+    _emailController.text = 'admin@techia.com';
+    _passwordController.text = 'admin123';
     await _handleLogin();
     setState(() => _isDemo = false);
   }
@@ -83,7 +83,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 shape: BoxShape.circle,
                 gradient: RadialGradient(
                   colors: [
-                    const Color(0xFF06B6D4).withOpacity(0.12),
+                    const Color(0xFF06B6D4).withValues(alpha: 0.12),
                     Colors.transparent,
                   ],
                 ),
@@ -100,7 +100,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 shape: BoxShape.circle,
                 gradient: RadialGradient(
                   colors: [
-                    const Color(0xFF06B6D4).withOpacity(0.08),
+                    const Color(0xFF06B6D4).withValues(alpha: 0.08),
                     Colors.transparent,
                   ],
                 ),

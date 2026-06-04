@@ -16,14 +16,32 @@ import type {
 // ============================================================
 
 const offerRoutes: FastifyPluginAsync = async (fastify) => {
+    fastify.addHook("onRequest", fastify.authenticate);
 
     // ── GET /api/offers ──────────────────────────────────────
-    fastify.get("/", async (_request, reply) => {
-        const offers = await fastify.prisma.offer.findMany({
-            orderBy: { createdAt: "desc" },
-        });
+    fastify.get<{
+        Querystring: { page?: string; page_size?: string };
+    }>("/", async (request, reply) => {
+        const queryPage = Math.max(1, Number(request.query.page) || 1);
+        const pageSize = Math.min(100, Math.max(1, Number(request.query.page_size) || 50));
+        const skip = (queryPage - 1) * pageSize;
 
-        return reply.send(offers);
+        const [offers, total] = await Promise.all([
+            fastify.prisma.offer.findMany({
+                orderBy: { createdAt: "desc" },
+                skip,
+                take: pageSize,
+            }),
+            fastify.prisma.offer.count(),
+        ]);
+
+        return reply.send({
+            data: offers,
+            total,
+            page: queryPage,
+            page_size: pageSize,
+            total_pages: Math.ceil(total / pageSize),
+        });
     });
 
     // ── GET /api/offers/:id ──────────────────────────────────

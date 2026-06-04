@@ -19,6 +19,7 @@ export const config = {
     host: process.env.HOST || "0.0.0.0",
     nodeEnv: process.env.NODE_ENV || "development",
     databaseUrl: requireEnv("DATABASE_URL"),
+    jwtSecret: requireEnv("JWT_SECRET"),
     corsOrigin: process.env.CORS_ORIGINS
         ?? process.env.CORS_ORIGIN
         ?? "http://localhost:3000",

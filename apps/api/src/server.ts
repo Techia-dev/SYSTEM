@@ -7,12 +7,14 @@ import { config } from "./config";
 import databasePlugin from "./plugins/database";
 import corsPlugin from "./plugins/cors";
 import errorHandlerPlugin from "./plugins/error-handler";
+import authPlugin from "./plugins/auth";
 
 // Routes
 import candidateRoutes from "./routes/candidates";
 import applicationRoutes from "./routes/applications";
 import offerRoutes from "./routes/offers/offers.routes";
 import commissionRoutes from "./routes/Commissions/commissions.routes";
+import authRoutes from "./routes/auth";
 
 // ============================================================
 // Logger — pino-pretty في dev، JSON في production
@@ -47,8 +49,10 @@ const start = async () => {
     await app.register(errorHandlerPlugin); // الأول دايماً
     await app.register(corsPlugin);
     await app.register(databasePlugin);
+    await app.register(authPlugin);
 
     // ── Routes ────────────────────────────────────────────────
+    await app.register(authRoutes, { prefix: "/api/auth" });
     await app.register(candidateRoutes, { prefix: "/api/candidates" });
     await app.register(applicationRoutes, { prefix: "/api/applications" });
     await app.register(offerRoutes, { prefix: "/api/offers" });

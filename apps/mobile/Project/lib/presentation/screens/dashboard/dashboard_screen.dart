@@ -31,7 +31,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
         child: LayoutBuilder(
           builder: (context, constraints) {
             final isDesktop = constraints.maxWidth >= 1024;
-            final isTablet = constraints.maxWidth >= 600 && !isDesktop;
 
             return SingleChildScrollView(
               padding: EdgeInsets.all(isDesktop ? 32 : 16),
