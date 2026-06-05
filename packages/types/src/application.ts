@@ -1,5 +1,5 @@
 import type { ApplicationStatus } from "./enums";
-import type { Candidate } from "./candidate";
+import type { Candidate } from "./candidates";
 import type { Offer } from "./offer";
 import type { Commission } from "./commission";
 

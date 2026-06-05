@@ -1,0 +1,27 @@
+{
+  "name": "@techia/sdk",
+  "version": "1.0.0",
+  "description": "Type-safe SDK for Techia ATS API",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "module": "dist/index.mjs",
+  "scripts": {
+    "build": "tsc",
+    "watch": "tsc --watch",
+    "type-check": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@techia/types": "workspace:*"
+  },
+  "devDependencies": {
+    "typescript": "^6.0.3"
+  },
+  "keywords": [
+    "ats",
+    "sdk",
+    "api-client",
+    "techia"
+  ],
+  "author": "Techia Team",
+  "license": "MIT"
+}

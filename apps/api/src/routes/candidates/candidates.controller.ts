@@ -1,52 +1,56 @@
 import { FastifyReply, FastifyRequest } from "fastify";
+import type {
+    CreateCandidateDto,
+    ListCandidatesQueryDto,
+    ListCandidatesResponse,
+} from "@techia/types";
+
 import { CandidatesService } from "./candidates.service";
-import { CandidateLevel } from "@prisma/client";
-import { CreateCandidateDto } from "@techia/types";
+import { CandidatesRepository } from "./candidates.repository";
+import { validate } from "../../shared/validation";
+import { ListCandidatesQuerySchema, CreateCandidateDtoSchema } from "./candidates.schema";
+import type { AppError } from "../../shared/error";
+import { successResponse, errorResponse } from "../../shared/response";
 
-const service = new CandidatesService();
-
-// helper (safe enum guard)
-const isCandidateLevel = (value?: string): value is CandidateLevel => {
-    return (
-        value === "junior" ||
-        value === "mid" ||
-        value === "senior" ||
-        value === "lead"
-    );
-};
+const service = new CandidatesService(new CandidatesRepository());
 
 export class CandidatesController {
     static async list(
-        request: FastifyRequest<{
-            Querystring: {
-                page?: string;
-                page_size?: string;
-                search?: string;
-                level?: string;
-            };
-        }>,
+        request: FastifyRequest<{ Querystring: ListCandidatesQueryDto }>,
         reply: FastifyReply
     ) {
-        const q = request.query;
+        try {
+            const query = validate(ListCandidatesQuerySchema, request.query);
 
-        const level = isCandidateLevel(q.level) ? q.level : undefined;
+            const result: ListCandidatesResponse = await service.list({
+                page: Math.max(1, Number(query?.page ?? 1)),
+                pageSize: Math.min(100, Number(query?.page_size ?? 50)),
+                search: query?.search,
+                level: query?.level,
+            });
 
-        const result = await service.list({
-            page: Math.max(1, Number(q.page) || 1),
-            pageSize: Math.min(100, Math.max(1, Number(q.page_size) || 50)),
-            search: q.search,
-            level,
-        });
-
-        return reply.send(result);
+            return reply.send(successResponse(result));
+        } catch (error) {
+            const err = error as AppError;
+            return reply
+                .status(err.statusCode ?? 500)
+                .send(errorResponse(err.message, err.code ?? "UNKNOWN_ERROR"));
+        }
     }
 
     static async create(
         request: FastifyRequest<{ Body: CreateCandidateDto }>,
         reply: FastifyReply
     ) {
-        const result = await service.create(request.body);
-
-        return reply.status(201).send(result);
+        try {
+            const input = validate(CreateCandidateDtoSchema, request.body);
+            const result = await service.create(input);
+            return reply.status(201).send(successResponse(result));
+        } catch (error) {
+            const err = error as AppError;
+            return reply
+                .status(err.statusCode ?? 500)
+                .send(errorResponse(err.message, err.code ?? "UNKNOWN_ERROR"));
+        }
     }
 }

@@ -1,11 +1,12 @@
 import { buildApp } from "./buildApp";
+import { config } from "../config";
 
 export const startServer = async () => {
     const app = buildApp();
 
     await app.listen({
-        port: Number(process.env.PORT ?? 3000),
-        host: "0.0.0.0",
+        port: config.port,
+        host: config.host,
     });
 
     const shutdown = async (signal: string) => {

@@ -1,6 +1,9 @@
 import Fastify from "fastify";
 import { config } from "../config";
 
+// Plugins
+import prismaPlugin from "../plugins/prisma.plugin";
+import { authPlugin } from "@techia/admin-api";
 
 // Routes
 import candidateRoutes from "../routes/candidates/candidates.routes";
@@ -9,37 +12,39 @@ import offerRoutes from "../routes/offers/offers.routes";
 import commissionRoutes from "../routes/Commissions/commissions.routes";
 import { authRoutes } from "@techia/admin-api";
 
+// Workers
+import { registerWorkers } from "../workers";
+
 export const buildApp = () => {
     const app = Fastify({
         logger:
             config.nodeEnv === "development"
                 ? {
-                    transport: {
-                        target: "pino-pretty",
-                        options: {
-                            translateTime: "HH:MM:ss",
-                            ignore: "pid,hostname",
-                            colorize: true,
-                        },
-                    },
-                }
+                      transport: {
+                          target: "pino-pretty",
+                          options: {
+                              translateTime: "HH:MM:ss",
+                              ignore: "pid,hostname",
+                              colorize: true,
+                          },
+                      },
+                  }
                 : true,
     });
 
     // ============================================================
-    // GLOBAL ERROR HANDLER (NO ANY)
+    // GLOBAL ERROR HANDLER
     // ============================================================
 
-    app.setErrorHandler((error, request, reply) => {
+    app.setErrorHandler((error, _request, reply) => {
         app.log.error(error);
 
-        // type narrowing (NO any, NO casting)
         const statusCode =
             typeof error === "object" &&
                 error !== null &&
                 "statusCode" in error &&
-                typeof (error as { statusCode?: unknown }).statusCode === "number"
-                ? (error as { statusCode: number }).statusCode
+                typeof (error as Record<string, unknown>).statusCode === "number"
+                ? (error as Record<string, number>).statusCode
                 : 500;
 
         const message =
@@ -49,6 +54,22 @@ export const buildApp = () => {
             message,
         });
     });
+
+    // ============================================================
+    // PLUGINS (order matters: prisma → auth → routes)
+    // ============================================================
+
+    app.register(prismaPlugin);
+    app.register(authPlugin, {
+        secret: config.jwtSecret,
+        accessTokenTtl: config.jwtAccessTokenTtl,
+    });
+
+    // ============================================================
+    // WORKERS (Event listeners for domain events)
+    // ============================================================
+
+    registerWorkers();
 
     // ============================================================
     // ROUTES
@@ -71,7 +92,7 @@ export const buildApp = () => {
     }));
 
     app.get("/", async () => ({
-        message: "ATS API Running 🚀",
+        message: "ATS API Running",
     }));
 
     return app;
