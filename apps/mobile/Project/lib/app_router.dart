@@ -3,7 +3,7 @@ import 'package:provider/provider.dart';
 import 'core/constants/app_routes.dart';
 import 'providers/auth_provider.dart';
 import 'presentation/screens/auth/login_screen.dart';
-import 'presentation/screens/dashboard/dashboard_screen.dart';
+import 'presentation/widgets/navigation/main_scaffold.dart';
 
 class AppRouter {
   static Route<dynamic> generateRoute(RouteSettings settings) {
@@ -15,7 +15,7 @@ class AppRouter {
         );
       case AppRoutes.dashboard:
         return MaterialPageRoute(
-          builder: (_) => const DashboardScreen(),
+          builder: (_) => const MainScaffold(),
           settings: settings,
         );
       default:

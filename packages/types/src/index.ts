@@ -1,13 +1,36 @@
-// Enums
+//
+// ============================================================
+// ENUMS
+// ============================================================
+//
+
 export type {
     ApplicationStatus,
     CommissionStatus,
     CandidateLevel,
 } from "./enums";
 
-// Entities
-export type { Candidate, CreateCandidateDto, CreateCandidateResponse } from "./candidate";
-export type { Offer, OfferWithCount, CreateOfferDto, UpdateOfferDto, CreateOfferResponse } from "./offer";
+//
+// ============================================================
+// CORE ENTITIES (DOMAIN + DTOs)
+// ============================================================
+//
+
+export type {
+    Candidate,
+    CreateCandidateDto,
+    CreateCandidateResponse,
+    ListCandidateResponse,
+} from "./candidate";
+
+export type {
+    Offer,
+    OfferWithCount,
+    CreateOfferDto,
+    UpdateOfferDto,
+    CreateOfferResponse,
+} from "./offer";
+
 export type {
     Application,
     ApplicationWithRelations,
@@ -17,6 +40,7 @@ export type {
     CreateApplicationResponse,
     UpdateStatusResponse,
 } from "./application";
+
 export type {
     Commission,
     CommissionWithRelations,
@@ -24,7 +48,12 @@ export type {
     UpdateCommissionResponse,
 } from "./commission";
 
-// Auth
+//
+// ============================================================
+// AUTH
+// ============================================================
+//
+
 export type {
     LoginDto,
     LoginResponse,
@@ -32,3 +61,11 @@ export type {
     MeResponse,
     LogoutResponse,
 } from "./auth";
+
+//
+// ============================================================
+// SHARED
+// ============================================================
+//
+
+export type { PaginatedResponse } from "./pagination";

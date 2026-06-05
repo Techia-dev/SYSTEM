@@ -1,6 +1,8 @@
 class AppConstants {
   // API
-  static const String baseUrl = 'http://localhost:4000';
+  // استخدم --dart-define=API_URL=http://10.0.2.2:4000 للـ Android emulator
+  // أو --dart-define=API_URL=http://192.168.1.x:4000 للـ device الحقيقي
+  static const String baseUrl = String.fromEnvironment('API_URL', defaultValue: 'http://localhost:4000');
   static const String apiCandidates = '/api/candidates';
   static const String apiApplications = '/api/applications';
   static const String apiOffers = '/api/offers';

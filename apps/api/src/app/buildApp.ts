@@ -1,55 +1,69 @@
 import Fastify from "fastify";
 import { config } from "../config";
 
-// Plugins
-import databasePlugin from "../plugins/database";
-import corsPlugin from "../plugins/cors";
-import errorHandlerPlugin from "../plugins/error-handler";
 
 // Routes
-import candidateRoutes from "../routes/candidates";
+import candidateRoutes from "../routes/candidates/candidates.routes";
 import applicationRoutes from "../routes/applications";
 import offerRoutes from "../routes/offers/offers.routes";
 import commissionRoutes from "../routes/Commissions/commissions.routes";
-
-// Admin API
-import { authPlugin, authRoutes } from "@techia/admin-api";
+import { authRoutes } from "@techia/admin-api";
 
 export const buildApp = () => {
-    const logger =
-        config.nodeEnv === "development"
-            ? {
-                transport: {
-                    target: "pino-pretty",
-                    options: {
-                        translateTime: "HH:MM:ss",
-                        ignore: "pid,hostname",
-                        colorize: true,
+    const app = Fastify({
+        logger:
+            config.nodeEnv === "development"
+                ? {
+                    transport: {
+                        target: "pino-pretty",
+                        options: {
+                            translateTime: "HH:MM:ss",
+                            ignore: "pid,hostname",
+                            colorize: true,
+                        },
                     },
-                },
-            }
-            : true;
-
-    const app = Fastify({ logger });
-
-    // ── Plugins (composition layer) ──
-    app.register(errorHandlerPlugin);
-    app.register(corsPlugin);
-    app.register(databasePlugin);
-
-    app.register(authPlugin, {
-        secret: config.jwtSecret,
-        accessTokenTtl: config.jwtAccessTokenTtl,
+                }
+                : true,
     });
 
-    // ── Routes ──
+    // ============================================================
+    // GLOBAL ERROR HANDLER (NO ANY)
+    // ============================================================
+
+    app.setErrorHandler((error, request, reply) => {
+        app.log.error(error);
+
+        // type narrowing (NO any, NO casting)
+        const statusCode =
+            typeof error === "object" &&
+                error !== null &&
+                "statusCode" in error &&
+                typeof (error as { statusCode?: unknown }).statusCode === "number"
+                ? (error as { statusCode: number }).statusCode
+                : 500;
+
+        const message =
+            error instanceof Error ? error.message : "Internal Server Error";
+
+        reply.status(statusCode).send({
+            message,
+        });
+    });
+
+    // ============================================================
+    // ROUTES
+    // ============================================================
+
     app.register(authRoutes, { prefix: "/api/auth" });
     app.register(candidateRoutes, { prefix: "/api/candidates" });
     app.register(applicationRoutes, { prefix: "/api/applications" });
     app.register(offerRoutes, { prefix: "/api/offers" });
     app.register(commissionRoutes, { prefix: "/api/commissions" });
 
-    // ── Core routes ──
+    // ============================================================
+    // CORE ENDPOINTS
+    // ============================================================
+
     app.get("/health", async () => ({
         status: "ok",
         env: config.nodeEnv,

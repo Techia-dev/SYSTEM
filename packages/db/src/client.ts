@@ -1,26 +1,31 @@
 import { PrismaClient } from "@prisma/client";
 
-// ============================================================
-// Prisma Client Singleton
-// نمنع إنشاء أكثر من connection واحد في development
-// (Next.js hot reload بيعمل مشكلة لو مش singleton)
-// ============================================================
-
-const globalForPrisma = globalThis as unknown as {
-    prisma: PrismaClient | undefined;
+const globalForPrisma = globalThis as {
+    prisma?: PrismaClient;
 };
 
-export const prisma =
-    globalForPrisma.prisma ??
-    new PrismaClient({
+function createPrismaClient() {
+    return new PrismaClient({
         log:
-            process.env.NODE_ENV === "development"
-                ? ["query", "error", "warn"]
-                : ["error"],
+            process.env.PRISMA_LOG_QUERIES === "true"
+                ? ["query", "warn", "error"]
+                : ["warn", "error"],
     });
+}
+
+export const prisma =
+    globalForPrisma.prisma ?? createPrismaClient();
 
 if (process.env.NODE_ENV !== "production") {
     globalForPrisma.prisma = prisma;
 }
+
+process.on("SIGINT", async () => {
+    await prisma.$disconnect();
+});
+
+process.on("SIGTERM", async () => {
+    await prisma.$disconnect();
+});
 
 export default prisma;

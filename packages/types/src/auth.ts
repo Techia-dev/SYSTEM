@@ -7,6 +7,7 @@ export interface LoginDto {
 // ── API Responses ─────────────────────────────────────────
 export interface LoginResponse {
     token: string;
+    expiresIn: string;
     user: UserProfile;
 }
 

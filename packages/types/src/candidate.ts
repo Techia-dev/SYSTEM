@@ -23,3 +23,12 @@ export interface CreateCandidateResponse {
     id: string;
     message: string;
 }
+
+
+export interface ListCandidateResponse {
+    data: Candidate[];
+    total: number;
+    page: number;
+    pageSize: number;
+    totalPages: number;
+}

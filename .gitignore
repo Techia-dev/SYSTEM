@@ -1,8 +1,15 @@
 node_modules
 .next
+**/.next
 dist
+**/dist
 .turbo
 .env
 .env.local
 coverage
 .DS_Store
+apps/*/pnpm-lock.yaml
+apps/*/pnpm-workspace.yaml
+packages/db/src/*.js
+packages/db/src/*.d.ts
+packages/db/src/*.d.ts.map

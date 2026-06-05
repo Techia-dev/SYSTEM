@@ -4,6 +4,9 @@ import 'core/theme/app_theme.dart';
 import 'core/constants/app_routes.dart';
 import 'providers/auth_provider.dart';
 import 'providers/candidates_provider.dart';
+import 'providers/offers_provider.dart';
+import 'providers/applications_provider.dart';
+import 'providers/commissions_provider.dart';
 import 'app_router.dart';
 
 class TechiaApp extends StatelessWidget {
@@ -15,6 +18,9 @@ class TechiaApp extends StatelessWidget {
       providers: [
         ChangeNotifierProvider(create: (_) => AuthProvider()),
         ChangeNotifierProvider(create: (_) => CandidatesProvider()),
+        ChangeNotifierProvider(create: (_) => OffersProvider()),
+        ChangeNotifierProvider(create: (_) => ApplicationsProvider()),
+        ChangeNotifierProvider(create: (_) => CommissionsProvider()),
       ],
       child: MaterialApp(
         title: 'Techia ATS',

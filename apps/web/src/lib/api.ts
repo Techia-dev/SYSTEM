@@ -23,11 +23,30 @@ import type {
     CommissionWithRelations,
     UpdateCommissionStatusDto,
     UpdateCommissionResponse,
+    PaginatedResponse,
 } from "@techia/types";
 
 // ── Config ────────────────────────────────────────────────────
 const BASE_URL =
     process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000";
+
+// ── Auth token ────────────────────────────────────────────────
+function getAuthToken(): string | null {
+    if (typeof window === "undefined") return null;
+    return localStorage.getItem("auth_token");
+}
+
+export function setAuthToken(token: string) {
+    localStorage.setItem("auth_token", token);
+}
+
+export function clearAuthToken() {
+    localStorage.removeItem("auth_token");
+}
+
+export function isAuthenticated(): boolean {
+    return !!getAuthToken();
+}
 
 // ── Error class ───────────────────────────────────────────────
 export class ApiError extends Error {
@@ -53,12 +72,18 @@ async function request<T>(
 ): Promise<T> {
     const url = `${BASE_URL}${path}`;
 
+    const headers: Record<string, string> = {
+        "Content-Type": "application/json",
+    };
+
+    const token = getAuthToken();
+    if (token) {
+        headers["Authorization"] = `Bearer ${token}`;
+    }
+
     const res = await fetch(url, {
         ...options,
-        headers: {
-            "Content-Type": "application/json",
-            ...options.headers,
-        },
+        headers: { ...headers, ...options.headers },
     });
 
     // حاول تقرأ الـ body دايماً حتى لو في error
@@ -70,6 +95,13 @@ async function request<T>(
     }
 
     if (!res.ok) {
+        if (res.status === 401) {
+            clearAuthToken();
+            if (typeof window !== "undefined" && window.location.pathname !== "/login") {
+                window.location.assign("/login");
+            }
+        }
+
         const message =
             (body as { error?: string })?.error ??
             `HTTP ${res.status}: ${res.statusText}`;
@@ -116,6 +148,10 @@ function del<T>(path: string) {
 export const candidatesApi = {
     /** GET /api/candidates — كل المرشحين مرتبين بالأحدث */
     list(): Promise<Candidate[]> {
+        return get<PaginatedResponse<Candidate>>("/api/candidates").then((res) => res.data);
+    },
+
+    listPage(): Promise<PaginatedResponse<Candidate>> {
         return get("/api/candidates");
     },
 
@@ -132,6 +168,10 @@ export const candidatesApi = {
 export const offersApi = {
     /** GET /api/offers — كل العروض */
     list(): Promise<Offer[]> {
+        return get<PaginatedResponse<Offer>>("/api/offers").then((res) => res.data);
+    },
+
+    listPage(): Promise<PaginatedResponse<Offer>> {
         return get("/api/offers");
     },
 
@@ -163,6 +203,10 @@ export const offersApi = {
 export const applicationsApi = {
     /** GET /api/applications — كل الطلبات مع الـ candidate + offer */
     list(): Promise<ApplicationWithRelations[]> {
+        return get<PaginatedResponse<ApplicationWithRelations>>("/api/applications").then((res) => res.data);
+    },
+
+    listPage(): Promise<PaginatedResponse<ApplicationWithRelations>> {
         return get("/api/applications");
     },
 
@@ -195,6 +239,10 @@ export const applicationsApi = {
 export const commissionsApi = {
     /** GET /api/commissions — كل العمولات مع الـ candidate + offer */
     list(): Promise<CommissionWithRelations[]> {
+        return get<PaginatedResponse<CommissionWithRelations>>("/api/commissions").then((res) => res.data);
+    },
+
+    listPage(): Promise<PaginatedResponse<CommissionWithRelations>> {
         return get("/api/commissions");
     },
 
@@ -225,8 +273,52 @@ export const healthApi = {
     },
 };
 
+// ============================================================
+// AUTH  →  /api/auth
+// ============================================================
+
+export interface LoginDto {
+    email: string;
+    password: string;
+}
+
+export interface LoginResponse {
+    token: string;
+    expiresIn: string;
+    user: {
+        id: string;
+        email: string;
+        name: string | null;
+        role: string;
+    };
+}
+
+export interface MeResponse {
+    user: {
+        id: string;
+        email: string;
+        name: string | null;
+        role: string;
+    };
+}
+
+export const authApi = {
+    login(data: LoginDto): Promise<LoginResponse> {
+        return post("/api/auth/login", data);
+    },
+
+    me(): Promise<MeResponse> {
+        return get("/api/auth/me");
+    },
+
+    logout(): Promise<{ message: string }> {
+        return post("/api/auth/logout", {});
+    },
+};
+
 // ── Named export كـ namespace واحد (اختياري) ─────────────────
 export const api = {
+    auth: authApi,
     candidates: candidatesApi,
     offers: offersApi,
     applications: applicationsApi,

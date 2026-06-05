@@ -25,4 +25,4 @@ COPY --from=builder --chown=fastify:nodejs /app .
 
 USER fastify
 EXPOSE 4000
-CMD ["node", "apps/api/dist/server.js"]
+CMD ["sh", "-c", "pnpm --filter @techia/db run db:migrate:prod && node apps/api/dist/server.js"]
