@@ -11,6 +11,7 @@
     "lint": "eslint"
   },
   "dependencies": {
+    "@fastify/cors": "^11.2.0",
     "@fastify/jwt": "^10.1.0",
     "@prisma/client": "^5.22.0",
     "@techia/admin-api": "workspace:*",

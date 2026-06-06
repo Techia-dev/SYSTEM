@@ -20,6 +20,23 @@ export function isAuthenticated(): boolean {
     return !!getAuthToken();
 }
 
+// ── Response Types ────────────────────────────────────────────
+type ApiSuccess<T> = {
+    success: true;
+    data: T;
+};
+
+type ApiFailure = {
+    success: false;
+    error: {
+        message: string;
+        code: string;
+        fields?: Record<string, string[]>;
+    };
+};
+
+type ApiResponse<T> = ApiSuccess<T> | ApiFailure;
+
 // ── Error class ───────────────────────────────────────────────
 export class ApiError extends Error {
     constructor(
@@ -33,11 +50,6 @@ export class ApiError extends Error {
 }
 
 // ── Core fetch wrapper ────────────────────────────────────────
-// كل الـ requests بتمر من هنا:
-// - بيضيف Content-Type تلقائياً
-// - بيحول الـ errors لـ ApiError
-// - بيرجع الـ JSON مع الـ type المطلوب
-
 async function request<T>(
     path: string,
     options: RequestInit = {},
@@ -49,38 +61,72 @@ async function request<T>(
     };
 
     const token = getAuthToken();
+
     if (token) {
         headers["Authorization"] = `Bearer ${token}`;
     }
 
     const res = await fetch(url, {
         ...options,
-        headers: { ...headers, ...options.headers },
+        headers: {
+            ...headers,
+            ...options.headers,
+        },
     });
 
-    // حاول تقرأ الـ body دايماً حتى لو في error
     let body: unknown;
+
     try {
         body = await res.json();
     } catch {
         body = null;
     }
 
+    const response = body as ApiResponse<T>;
+
+    // HTTP Errors
     if (!res.ok) {
         if (res.status === 401) {
             clearAuthToken();
-            if (typeof window !== "undefined" && window.location.pathname !== "/login") {
+
+            if (
+                typeof window !== "undefined" &&
+                window.location.pathname !== "/login"
+            ) {
                 window.location.assign("/login");
             }
         }
 
-        const message =
-            (body as { error?: string })?.error ??
-            `HTTP ${res.status}: ${res.statusText}`;
-        throw new ApiError(res.status, message, body);
+        if (
+            response &&
+            "success" in response &&
+            response.success === false
+        ) {
+            throw new ApiError(
+                res.status,
+                response.error.message,
+                response.error
+            );
+        }
+
+        throw new ApiError(
+            res.status,
+            `HTTP ${res.status}: ${res.statusText}`,
+            body
+        );
     }
 
-    return body as T;
+    // Business Errors
+    if (response.success === false) {
+        throw new ApiError(
+            res.status,
+            response.error.message,
+            response.error
+        );
+    }
+
+    // Success
+    return response.data;
 }
 
 // ── Helper shortcuts ──────────────────────────────────────────
@@ -88,13 +134,13 @@ export function get<T>(path: string) {
     return request<T>(path, { method: "GET" });
 }
 
-export  function post<T>(path: string, data: unknown) {
+export function post<T>(path: string, data: unknown) {
     return request<T>(path, {
         method: "POST",
         body: JSON.stringify(data),
     });
 }
-    
+
 export function put<T>(path: string, data: unknown) {
     return request<T>(path, {
         method: "PUT",
@@ -110,5 +156,7 @@ export function patch<T>(path: string, data: unknown) {
 }
 
 export function del<T>(path: string) {
-    return request<T>(path, { method: "DELETE" });
+    return request<T>(path, {
+        method: "DELETE",
+    });
 }

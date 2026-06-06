@@ -1,4 +1,5 @@
 import Fastify from "fastify";
+import cors from "@fastify/cors";
 import { config } from "../config";
 
 // Plugins
@@ -20,15 +21,15 @@ export const buildApp = () => {
         logger:
             config.nodeEnv === "development"
                 ? {
-                      transport: {
-                          target: "pino-pretty",
-                          options: {
-                              translateTime: "HH:MM:ss",
-                              ignore: "pid,hostname",
-                              colorize: true,
-                          },
-                      },
-                  }
+                    transport: {
+                        target: "pino-pretty",
+                        options: {
+                            translateTime: "HH:MM:ss",
+                            ignore: "pid,hostname",
+                            colorize: true,
+                        },
+                    },
+                }
                 : true,
     });
 
@@ -56,17 +57,30 @@ export const buildApp = () => {
     });
 
     // ============================================================
+    // CORS (FIX for OPTIONS 404 + login failure)
+    // ============================================================
+
+    app.register(cors, {
+        origin: [
+            "http://localhost:3000",
+        ],
+        credentials: true,
+        methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+    });
+
+    // ============================================================
     // PLUGINS (order matters: prisma → auth → routes)
     // ============================================================
 
     app.register(prismaPlugin);
+
     app.register(authPlugin, {
         secret: config.jwtSecret,
         accessTokenTtl: config.jwtAccessTokenTtl,
     });
 
     // ============================================================
-    // WORKERS (Event listeners for domain events)
+    // WORKERS
     // ============================================================
 
     registerWorkers();
