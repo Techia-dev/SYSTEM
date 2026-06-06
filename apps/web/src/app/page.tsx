@@ -6,6 +6,7 @@ import { StatCard } from "@/components/ui/StatCard";
 import { api } from "@/lib/api";
 import { formatCurrency } from "@/lib/utils";
 
+
 interface DashboardStats {
   candidates: number;
   applications: number;

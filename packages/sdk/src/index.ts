@@ -7,10 +7,10 @@ export { TechiaSdk } from "./sdk";
 export { HttpClient, TechiaSdkError } from "./client";
 export type { ClientConfig, ApiResponse } from "./client";
 
-export { CandidatesResource } from "./resources/candidates";
-export { ApplicationsResource } from "./resources/applications";
-export { OffersResource } from "./resources/offers";
-export { CommissionsResource } from "./resources/commissions";
+export { CandidatesResource } from "./modules/candidates";
+export { ApplicationsResource } from "./modules/applications";
+export { OffersResource } from "./modules/offers";
+export { CommissionsResource } from "./modules/commissions";
 
 // Re-export types from @techia/types
 export type {

@@ -3,10 +3,10 @@
  */
 
 import { HttpClient, type ClientConfig } from "./client";
-import { CandidatesResource } from "./resources/candidates";
-import { ApplicationsResource } from "./resources/applications";
-import { OffersResource } from "./resources/offers";
-import { CommissionsResource } from "./resources/commissions";
+import { CandidatesResource } from "./modules/candidates";
+import { ApplicationsResource } from "./modules/applications";
+import { OffersResource } from "./modules/offers";
+import { CommissionsResource } from "./modules/commissions";
 
 export class TechiaSdk {
     private httpClient: HttpClient;

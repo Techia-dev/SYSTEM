@@ -83,6 +83,9 @@ importers:
 
   apps/web:
     dependencies:
+      '@techia/sdk':
+        specifier: workspace:*
+        version: link:../../packages/sdk
       '@techia/types':
         specifier: workspace:*
         version: link:../../packages/types
