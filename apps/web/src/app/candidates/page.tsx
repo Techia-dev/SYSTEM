@@ -9,7 +9,7 @@ import {
 import { LevelBadge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { Modal, ModalFooter } from "@/components/ui/Modal";
-import { api } from "@/lib/api";
+import { sdk } from "@/lib/sdk";
 import { formatDate } from "@techia/utils";
 import { getErrorMessage } from "@/lib/utils";
 import type { Candidate, CreateCandidateDto, CandidateLevel } from "@techia/types";
@@ -39,9 +39,9 @@ export default function CandidatesPage() {
     try {
       setError(null);
 
-      const data = await api.candidates.list();
+      const res= await sdk.candidates.list();
 
-      setCandidates(data);
+      setCandidates(res.data);
     } catch (err) {
       setError(getErrorMessage(err));
     } finally {
@@ -83,7 +83,7 @@ export default function CandidatesPage() {
     try {
       setSaving(true);
       setFormError(null);
-      await api.candidates.create({
+      await sdk.candidates.create({
         name:  form.name.trim(),
         phone: form.phone.trim(),
         email: form.email?.trim() || undefined,

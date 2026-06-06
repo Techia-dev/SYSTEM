@@ -97,8 +97,15 @@ export class HttpClient {
     }
 
     /**
+     * Make a PATCH request
      * Core request method with error handling
      */
+    async patch<T>(path: string, data?: unknown): Promise<T> {
+        return this.request<T>(path, {
+            method: "PATCH",
+            body: data ? JSON.stringify(data) : undefined,
+        });
+    }
     private async request<T>(path: string, options: RequestInit): Promise<T> {
         const url = `${this.baseURL}${path}`;
         const controller = new AbortController();
