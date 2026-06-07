@@ -72,7 +72,7 @@ export default function ApplicationsPage() {
         sdk.offers.list(),
       ]);
 
-      // ✅ unwrap PaginatedResponse correctly
+      //  unwrap PaginatedResponse correctly
       setApplications(apps.data);
       setCandidates(cands.data);
       setOffers(offs.data.filter((o: Offer) => o.isActive));
