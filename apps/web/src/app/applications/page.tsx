@@ -1,17 +1,10 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { PageShell } from "@/components/layout/Sidebar";
 import {
-  Table,
-  TableHead,
-  Th,
-  TableBody,
-  Tr,
-  Td,
-  TableSkeleton,
-  TableEmpty,
-  AvatarCell,
+  Table, TableHead, Th, TableBody, Tr, Td,
+  TableSkeleton, TableEmpty,
 } from "@/components/ui/Table";
 import { ApplicationBadge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
@@ -19,63 +12,24 @@ import { Modal, ModalFooter } from "@/components/ui/Modal";
 import { sdk } from "@/lib/sdk";
 import { formatDate } from "@techia/utils";
 import { getErrorMessage } from "@/lib/utils";
-
-import type {
-  ApplicationWithRelations,
-  CreateApplicationDto,
-  ApplicationStatus,
-  Candidate,
-  Offer,
-  PaginatedResponse,
-} from "@techia/types";
-
-const STATUSES: { value: ApplicationStatus | "all"; label: string }[] = [
-  { value: "all", label: "All statuses" },
-  { value: "applied", label: "Applied" },
-  { value: "interview", label: "Interview" },
-  { value: "accepted", label: "Accepted" },
-  { value: "rejected", label: "Rejected" },
-];
+import type { ApplicationWithRelations, ApplicationStatus } from "@techia/types";
 
 export default function ApplicationsPage() {
   const [applications, setApplications] = useState<ApplicationWithRelations[]>([]);
-  const [candidates, setCandidates] = useState<Candidate[]>([]);
-  const [offers, setOffers] = useState<Offer[]>([]);
-
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const [statusFilter, setStatusFilter] =
-    useState<ApplicationStatus | "all">("all");
-
-  const [search, setSearch] = useState("");
-
-  const [addOpen, setAddOpen] = useState(false);
-  const [saving, setSaving] = useState(false);
-  const [formError, setFormError] = useState<string | null>(null);
-
-  const [form, setForm] = useState<CreateApplicationDto>({
-    candidateId: "",
-    offerId: "",
-    source: "",
-    assignedTo: "",
-  });
+  const [statusOpen, setStatusOpen] = useState(false);
+  const [statusTarget, setStatusTarget] = useState<ApplicationWithRelations | null>(null);
+  const [newStatus, setNewStatus] = useState<ApplicationStatus>("interview");
+  const [statusSaving, setStatusSaving] = useState(false);
+  const [statusError, setStatusError] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     try {
       setError(null);
-      setLoading(true);
-
-      const [apps, cands, offs] = await Promise.all([
-        sdk.applications.list(),
-        sdk.candidates.list(),
-        sdk.offers.list(),
-      ]);
-
-      //  unwrap PaginatedResponse correctly
-      setApplications(apps.data);
-      setCandidates(cands.data);
-      setOffers(offs.data.filter((o: Offer) => o.isActive));
+      const res = await sdk.applications.list();
+      setApplications(res.data);
     } catch (err) {
       setError(getErrorMessage(err));
     } finally {
@@ -87,218 +41,140 @@ export default function ApplicationsPage() {
     void load();
   }, [load]);
 
-  const filtered = useMemo(() => {
-    const term = search.trim().toLowerCase();
+  function openStatus(app: ApplicationWithRelations) {
+    setStatusTarget(app);
 
-    return applications.filter((a) => {
-      const matchStatus =
-        statusFilter === "all" || a.status === statusFilter;
+    const next: ApplicationStatus =
+      app.status === "applied"
+        ? "interview"
+        : app.status === "interview"
+          ? "accepted"
+          : "rejected";
 
-      const matchSearch =
-        term === "" ||
-        a.candidate.name.toLowerCase().includes(term) ||
-        a.offer.title.toLowerCase().includes(term);
-
-      return matchStatus && matchSearch;
-    });
-  }, [applications, search, statusFilter]);
-
-  function openAdd() {
-    setForm({ candidateId: "", offerId: "", source: "", assignedTo: "" });
-    setFormError(null);
-    setAddOpen(true);
+    setNewStatus(next);
+    setStatusError(null);
+    setStatusOpen(true);
   }
 
-  async function handleAdd() {
-    if (!form.candidateId || !form.offerId) {
-      setFormError("Candidate and offer are required.");
-      return;
-    }
+  async function handleStatusUpdate() {
+    if (!statusTarget) return;
 
     try {
-      setSaving(true);
-      setFormError(null);
+      setStatusSaving(true);
+      setStatusError(null);
 
-      await sdk.applications.create({
-        candidateId: form.candidateId,
-        offerId: form.offerId,
-        source: form.source?.trim() || undefined,
-        assignedTo: form.assignedTo?.trim() || undefined,
+      await sdk.applications.updateStatus(statusTarget.id, {
+        status: newStatus,
       });
 
-      setAddOpen(false);
+      setStatusOpen(false);
       await load();
     } catch (err) {
-      setFormError(getErrorMessage(err));
+      setStatusError(getErrorMessage(err));
     } finally {
-      setSaving(false);
+      setStatusSaving(false);
     }
   }
 
   return (
-    <PageShell
-      title="Applications"
-      action={
-        <Button variant="primary" onClick={openAdd} icon={<PlusIcon />}>
-          New application
-        </Button>
-      }
-    >
-      {/* Filters */}
+    <PageShell title="Applications">
       <div className="flex gap-2 mb-4">
-        <input
-          type="text"
-          placeholder="Search candidate or offer…"
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          className="h-8 px-3 text-sm rounded-lg border border-zinc-200"
-        />
-
-        <select
-          value={statusFilter}
-          onChange={(e) =>
-            setStatusFilter(e.target.value as ApplicationStatus | "all")
-          }
-          className="h-8 px-2 text-sm rounded-lg border border-zinc-200"
-        >
-          {STATUSES.map((s) => (
-            <option key={s.value} value={s.value}>
-              {s.label}
-            </option>
-          ))}
-        </select>
+        <p className="text-sm text-zinc-500">
+          Applications are created by candidates. Update status to progress them.
+        </p>
       </div>
 
-      {/* Error */}
       {error && (
-        <div className="mb-4 text-red-600">
+        <div className="mb-4 px-4 py-3 rounded-lg bg-red-50 border border-red-200 text-sm text-red-700 flex justify-between">
           {error}
-          <button onClick={load} className="ml-2 underline">
-            Retry
-          </button>
+          <button onClick={load} className="underline">Retry</button>
         </div>
       )}
 
-      {/* Table */}
       <Table>
         <TableHead>
           <tr>
             <Th>Candidate</Th>
             <Th>Offer</Th>
             <Th>Status</Th>
-            <Th>Source</Th>
-            <Th>Assigned</Th>
-            <Th>Date</Th>
+            <Th>Applied</Th>
+            <Th></Th>
           </tr>
         </TableHead>
 
         {loading ? (
-          <TableSkeleton cols={6} />
-        ) : filtered.length === 0 ? (
-          <TableEmpty cols={6} message="No applications found" />
+          <TableSkeleton cols={5} />
+        ) : applications.length === 0 ? (
+          <TableEmpty cols={5} message="No applications found" />
         ) : (
           <TableBody>
-            {filtered.map((a) => (
+            {applications.map((a) => (
               <Tr key={a.id}>
                 <Td>
-                  <AvatarCell
-                    name={a.candidate.name}
-                    sub={a.candidate.level}
-                  />
+                  <p className="font-medium text-zinc-800">{a.candidate.name}</p>
+                  <p className="text-xs text-zinc-400">{a.candidate.phone}</p>
                 </Td>
-                <Td>{a.offer.title}</Td>
+
+                <Td>
+                  <p className="font-medium text-zinc-800">{a.offer.title}</p>
+                  {a.offer.company && (
+                    <p className="text-xs text-zinc-400">{a.offer.company}</p>
+                  )}
+                </Td>
+
                 <Td>
                   <ApplicationBadge status={a.status} />
                 </Td>
-                <Td>{a.source ?? "—"}</Td>
-                <Td>{a.assignedTo ?? "—"}</Td>
-                <Td>{formatDate(new Date(a.createdAt))}</Td>
+
+                <Td className="text-zinc-400">
+                  {formatDate(new Date(a.createdAt))}
+                </Td>
+
+                <Td>
+                  {a.status !== "accepted" && a.status !== "rejected" && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => openStatus(a)}
+                    >
+                      Move to {a.status === "applied" ? "Interview" : "Accepted"}
+                    </Button>
+                  )}
+                </Td>
               </Tr>
             ))}
           </TableBody>
         )}
       </Table>
 
-      {/* Add Modal */}
       <Modal
-        open={addOpen}
-        onClose={() => setAddOpen(false)}
-        title="New application"
+        open={statusOpen}
+        onClose={() => setStatusOpen(false)}
+        title="Update application status"
+        size="sm"
+        description={
+          statusTarget
+            ? `${statusTarget.candidate.name} — ${statusTarget.offer.title}`
+            : ""
+        }
       >
         <div className="space-y-3">
-          <Field label="Candidate">
-            <select
-              value={form.candidateId}
-              onChange={(e) =>
-                setForm({ ...form, candidateId: e.target.value })
-              }
-            >
-              <option value="">Select</option>
-              {candidates.map((c) => (
-                <option key={c.id} value={c.id}>
-                  {c.name}
-                </option>
-              ))}
-            </select>
-          </Field>
+          <p className="text-sm text-zinc-500">
+            Change status to <strong>{newStatus}</strong>?
+          </p>
 
-          <Field label="Offer">
-            <select
-              value={form.offerId}
-              onChange={(e) =>
-                setForm({ ...form, offerId: e.target.value })
-              }
-            >
-              <option value="">Select</option>
-              {offers.map((o: Offer) => (
-                <option key={o.id} value={o.id}>
-                  {o.title}
-                </option>
-              ))}
-            </select>
-          </Field>
-
-          {formError && (
-            <p className="text-red-600 text-sm">{formError}</p>
+          {statusError && (
+            <p className="text-sm text-red-600">{statusError}</p>
           )}
         </div>
 
         <ModalFooter
-          onCancel={() => setAddOpen(false)}
-          onConfirm={handleAdd}
-          confirmLabel="Create"
-          loading={saving}
+          onCancel={() => setStatusOpen(false)}
+          onConfirm={handleStatusUpdate}
+          confirmLabel={`Mark as ${newStatus}`}
+          loading={statusSaving}
         />
       </Modal>
     </PageShell>
-  );
-}
-
-function Field({
-  label,
-  children,
-}: {
-  label: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <div className="flex flex-col gap-1">
-      <label className="text-xs">{label}</label>
-      {children}
-    </div>
-  );
-}
-
-function PlusIcon() {
-  return (
-    <svg
-      className="w-4 h-4"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth={2}
-    >
-      <path d="M12 5v14M5 12h14" />
-    </svg>
   );
 }

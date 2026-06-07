@@ -5,6 +5,7 @@ import type {
     UpdateApplicationStatusDto,
     UpdateStatusResponse,
     PaginatedResponse,
+    CreateApplicationResponse,
 } from "@techia/types";
 
 import type { HttpClient } from "../client";
@@ -12,22 +13,46 @@ import type { HttpClient } from "../client";
 export class ApplicationsResource {
     constructor(private client: HttpClient) { }
 
-    list(): Promise<PaginatedResponse<ApplicationWithRelations>> {
-        return this.client.get("/applications");
+    /**
+     * List applications with pagination
+     */
+    async list(): Promise<PaginatedResponse<ApplicationWithRelations>> {
+        return this.client.get<PaginatedResponse<ApplicationWithRelations>>(
+            "/applications"
+        );
     }
 
-    getById(id: string): Promise<ApplicationFull> {
-        return this.client.get(`/applications/${id}`);
+    /**
+     * Get application details
+     */
+    async getById(id: string): Promise<ApplicationFull> {
+        return this.client.get<ApplicationFull>(
+            `/applications/${id}`
+        );
     }
 
-    create(data: CreateApplicationDto) {
-        return this.client.post("/applications", data);
+    /**
+     * Create application
+     */
+    async create(
+        data: CreateApplicationDto
+    ): Promise<CreateApplicationResponse> {
+        return this.client.post<CreateApplicationResponse>(
+            "/applications",
+            data
+        );
     }
 
-    updateStatus(
+    /**
+     * Update application status
+     */
+    async updateStatus(
         id: string,
         data: UpdateApplicationStatusDto
     ): Promise<UpdateStatusResponse> {
-        return this.client.put(`/applications/${id}/status`, data);
+        return this.client.put<UpdateStatusResponse>(
+            `/applications/${id}/status`,
+            data
+        );
     }
 }

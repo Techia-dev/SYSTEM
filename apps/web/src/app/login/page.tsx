@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { authApi, setAuthToken, isAuthenticated } from "@/lib/api";
+import { sdk } from "@/lib/sdk";
 import { getErrorMessage } from "@/lib/utils";
 
 export default function LoginPage() {
@@ -29,8 +30,18 @@ export default function LoginPage() {
 
         try {
             setLoading(true);
-            const res = await authApi.login({ email: email.trim(), password });
+
+            const res = await authApi.login({
+                email: email.trim(),
+                password,
+            });
+
+            // save token
             setAuthToken(res.token);
+
+            // inject token into SDK immediately
+            sdk.setAuthToken(res.token);
+
             router.replace("/");
         } catch (err) {
             setError(getErrorMessage(err));
@@ -45,12 +56,28 @@ export default function LoginPage() {
                 <div className="bg-white rounded-xl border border-zinc-200 p-8 shadow-sm">
                     <div className="mb-8 text-center">
                         <div className="w-10 h-10 rounded-lg bg-emerald-600 flex items-center justify-center mx-auto mb-3">
-                            <svg className="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                                <path strokeLinecap="round" strokeLinejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0" />
+                            <svg
+                                className="w-5 h-5 text-white"
+                                fill="none"
+                                viewBox="0 0 24 24"
+                                stroke="currentColor"
+                                strokeWidth={2.5}
+                            >
+                                <path
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0"
+                                />
                             </svg>
                         </div>
-                        <h1 className="text-lg font-semibold text-zinc-900">Techia ATS</h1>
-                        <p className="text-sm text-zinc-500 mt-1">Sign in to your account</p>
+
+                        <h1 className="text-lg font-semibold text-zinc-900">
+                            Techia ATS
+                        </h1>
+
+                        <p className="text-sm text-zinc-500 mt-1">
+                            Sign in to your account
+                        </p>
                     </div>
 
                     {error && (
@@ -61,7 +88,10 @@ export default function LoginPage() {
 
                     <form onSubmit={handleSubmit} className="space-y-4">
                         <div>
-                            <label className="text-xs font-medium text-zinc-500">Email</label>
+                            <label className="text-xs font-medium text-zinc-500">
+                                Email
+                            </label>
+
                             <input
                                 type="email"
                                 value={email}
@@ -73,7 +103,10 @@ export default function LoginPage() {
                         </div>
 
                         <div>
-                            <label className="text-xs font-medium text-zinc-500">Password</label>
+                            <label className="text-xs font-medium text-zinc-500">
+                                Password
+                            </label>
+
                             <input
                                 type="password"
                                 value={password}
@@ -94,7 +127,7 @@ export default function LoginPage() {
                     </form>
 
                     <p className="mt-6 text-center text-xs text-zinc-400">
-                        Techia ATS &middot; v1.0.0
+                        Techia ATS · v1.0.0
                     </p>
                 </div>
             </div>

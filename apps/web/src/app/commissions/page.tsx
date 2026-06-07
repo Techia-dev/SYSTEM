@@ -9,7 +9,7 @@ import {
 import { CommissionBadge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { Modal, ModalFooter } from "@/components/ui/Modal";
-import { api } from "@/lib/api";
+import { sdk } from "@/lib/sdk";
 import { formatDate } from "@techia/utils";
 import { getErrorMessage } from "@/lib/utils";
 import type { CommissionWithRelations, CommissionStatus } from "@techia/types";
@@ -19,7 +19,6 @@ export default function CommissionsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // status modal
   const [statusOpen, setStatusOpen] = useState(false);
   const [statusTarget, setStatusTarget] = useState<CommissionWithRelations | null>(null);
   const [newStatus, setNewStatus] = useState<CommissionStatus>("pending");
@@ -28,9 +27,14 @@ export default function CommissionsPage() {
 
   const load = useCallback(async () => {
     try {
+      setLoading(true);
       setError(null);
-      const data = await api.commissions.list();
-      setCommissions(data);
+
+      const res = await sdk.commissions.list();
+
+      // SDK standard
+      setCommissions(res.data);
+
     } catch (err) {
       setError(getErrorMessage(err));
     } finally {
@@ -44,7 +48,7 @@ export default function CommissionsPage() {
 
   function openStatus(commission: CommissionWithRelations) {
     setStatusTarget(commission);
-    setNewStatus(commission.status);
+    setNewStatus("paid");
     setStatusError(null);
     setStatusOpen(true);
   }
@@ -56,10 +60,13 @@ export default function CommissionsPage() {
       setStatusSaving(true);
       setStatusError(null);
 
-      await api.commissions.updateStatus(statusTarget.id, { status: newStatus });
+      await sdk.commissions.updateStatus(statusTarget.id, {
+        status: newStatus,
+      });
 
       setStatusOpen(false);
       await load();
+
     } catch (err) {
       setStatusError(getErrorMessage(err));
     } finally {
@@ -107,19 +114,37 @@ export default function CommissionsPage() {
                   <p className="font-medium text-zinc-800">{c.candidate.name}</p>
                   <p className="text-xs text-zinc-400">{c.candidate.phone}</p>
                 </Td>
+
                 <Td>
                   <p className="font-medium text-zinc-800">{c.offer.title}</p>
                   {c.offer.company && (
                     <p className="text-xs text-zinc-400">{c.offer.company}</p>
                   )}
                 </Td>
-                <Td><AmountCell amount={c.amount} /></Td>
-                <Td><CommissionBadge status={c.status} /></Td>
-                <Td className="text-zinc-400">{formatDate(new Date(c.dueDate))}</Td>
-                <Td className="text-zinc-400">{formatDate(new Date(c.earnedAt))}</Td>
+
+                <Td>
+                  <AmountCell amount={c.amount} />
+                </Td>
+
+                <Td>
+                  <CommissionBadge status={c.status} />
+                </Td>
+
+                <Td className="text-zinc-400">
+                  {formatDate(new Date(c.dueDate))}
+                </Td>
+
+                <Td className="text-zinc-400">
+                  {c.earnedAt ? formatDate(new Date(c.earnedAt)) : "—"}
+                </Td>
+
                 <Td>
                   {c.status === "pending" && (
-                    <Button variant="ghost" size="sm" onClick={() => openStatus(c)}>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => openStatus(c)}
+                    >
                       Mark paid
                     </Button>
                   )}
@@ -135,14 +160,20 @@ export default function CommissionsPage() {
         onClose={() => setStatusOpen(false)}
         title="Update commission status"
         size="sm"
-        description={statusTarget ? `${statusTarget.candidate.name} — ${statusTarget.offer.title}` : ""}
+        description={
+          statusTarget
+            ? `${statusTarget.candidate.name} — ${statusTarget.offer.title}`
+            : ""
+        }
       >
         <div className="space-y-3">
           <p className="text-sm text-zinc-500">
             Mark this commission as paid?
           </p>
 
-          {statusError && <p className="text-sm text-red-600">{statusError}</p>}
+          {statusError && (
+            <p className="text-sm text-red-600">{statusError}</p>
+          )}
         </div>
 
         <ModalFooter

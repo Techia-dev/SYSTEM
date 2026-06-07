@@ -7,6 +7,7 @@ export type ClientConfig = {
     baseURL: string;
     timeout?: number;
     headers?: Record<string, string>;
+    apiPrefix?: string;
 };
 
 export type ApiResponse<T> = {
@@ -38,10 +39,12 @@ export class HttpClient {
     private baseURL: string;
     private timeout: number;
     private headers: Record<string, string>;
+    private apiPrefix: string;
 
     constructor(config: ClientConfig) {
         this.baseURL = config.baseURL;
         this.timeout = config.timeout ?? 30000;
+        this.apiPrefix = config.apiPrefix ?? "/api";
         this.headers = {
             "Content-Type": "application/json",
             ...config.headers,
@@ -106,15 +109,27 @@ export class HttpClient {
             body: data ? JSON.stringify(data) : undefined,
         });
     }
+    private getAuthToken(): string | null {
+        if (typeof window === "undefined") return null;
+        return localStorage.getItem("auth_token");
+    }
+
     private async request<T>(path: string, options: RequestInit): Promise<T> {
-        const url = `${this.baseURL}${path}`;
+        const token = this.getAuthToken();
+        const requestHeaders = { ...this.headers };
+        if (token) {
+            requestHeaders["Authorization"] = `Bearer ${token}`;
+        }
+
+        const url = `${this.baseURL}${this.apiPrefix}${path}`;
+        console.log("[SDK]", url);
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), this.timeout);
 
         try {
             const response = await fetch(url, {
                 ...options,
-                headers: this.headers,
+                headers: requestHeaders,
                 signal: controller.signal,
             });
 

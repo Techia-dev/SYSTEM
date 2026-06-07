@@ -3,6 +3,7 @@ import type {
     OfferWithCount,
     CreateOfferDto,
     UpdateOfferDto,
+    CreateOfferResponse,
     PaginatedResponse,
 } from "@techia/types";
 
@@ -11,23 +12,57 @@ import type { HttpClient } from "../client";
 export class OffersResource {
     constructor(private client: HttpClient) { }
 
-    list(): Promise<PaginatedResponse<Offer>> {
-        return this.client.get("/offers");
+    /**
+     * List offers with pagination
+     */
+    async list(): Promise<PaginatedResponse<Offer>> {
+        return this.client.get<PaginatedResponse<Offer>>(
+            "/offers"
+        );
     }
 
-    getById(id: string): Promise<OfferWithCount> {
-        return this.client.get(`/offers/${id}`);
+    /**
+     * Get offer details
+     */
+    async getById(id: string): Promise<OfferWithCount> {
+        return this.client.get<OfferWithCount>(
+            `/offers/${id}`
+        );
     }
 
-    create(data: CreateOfferDto) {
-        return this.client.post("/offers", data);
+    /**
+     * Create offer
+     */
+    async create(
+        data: CreateOfferDto
+    ): Promise<CreateOfferResponse> {
+        return this.client.post<CreateOfferResponse>(
+            "/offers",
+            data
+        );
     }
 
-    update(id: string, data: UpdateOfferDto) {
-        return this.client.put(`/offers/${id}`, data);
+    /**
+     * Update offer
+     */
+    async update(
+        id: string,
+        data: UpdateOfferDto
+    ): Promise<Offer> {
+        return this.client.put<Offer>(
+            `/offers/${id}`,
+            data
+        );
     }
 
-    deactivate(id: string) {
-        return this.client.delete(`/offers/${id}`);
+    /**
+     * Soft delete offer
+     */
+    async deactivate(
+        id: string
+    ): Promise<{ message: string }> {
+        return this.client.delete<{ message: string }>(
+            `/offers/${id}`
+        );
     }
 }

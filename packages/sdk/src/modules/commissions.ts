@@ -13,20 +13,36 @@ import type { HttpClient } from "../client";
 export class CommissionsResource {
     constructor(private client: HttpClient) { }
 
-    list(): Promise<PaginatedResponse<CommissionWithRelations>> {
-        return this.client.get("/commissions");
+    /**
+     * List commissions with pagination
+     */
+    async list(): Promise<PaginatedResponse<CommissionWithRelations>> {
+        return this.client.get<PaginatedResponse<CommissionWithRelations>>(
+            "/commissions"
+        );
     }
 
-    getById(
+    /**
+     * Get commission by ID
+     */
+    async getById(
         id: string
     ): Promise<Commission & { candidate: Candidate; offer: Offer }> {
-        return this.client.get(`/commissions/${id}`);
+        return this.client.get<
+            Commission & { candidate: Candidate; offer: Offer }
+        >(`/commissions/${id}`);
     }
 
-    updateStatus(
+    /**
+     * Update commission status
+     */
+    async updateStatus(
         id: string,
         data: UpdateCommissionStatusDto
     ): Promise<UpdateCommissionResponse> {
-        return this.client.patch(`/commissions/${id}/status`, data);
+        return this.client.patch<UpdateCommissionResponse>(
+            `/commissions/${id}/status`,
+            data
+        );
     }
 }
