@@ -1,6 +1,7 @@
 import Fastify from "fastify";
 import cors from "@fastify/cors";
 import rateLimit from "@fastify/rate-limit";
+import multipart from "@fastify/multipart";
 import { config } from "../config";
 
 // Plugins
@@ -12,6 +13,7 @@ import candidateRoutes from "../routes/candidates/candidates.routes";
 import applicationRoutes from "../routes/applications";
 import offerRoutes from "../routes/offers/offers.routes";
 import commissionRoutes from "../routes/commissions/commissions.routes";
+import dashboardRoutes from "../routes/dashboard/dashboard.routes";
 import { authRoutes } from "@techia/admin-api";
 
 // Shared
@@ -73,6 +75,17 @@ export const buildApp = () => {
     });
 
     // ============================================================
+    // MULTIPART (for file uploads)
+    // ============================================================
+
+    app.register(multipart, {
+        limits: {
+            fileSize: 10 * 1024 * 1024, // 10 MB max
+            files: 1,
+        },
+    });
+
+    // ============================================================
     // RATE LIMIT (before auth & routes)
     // ============================================================
 
@@ -108,6 +121,7 @@ export const buildApp = () => {
     app.register(applicationRoutes, { prefix: "/api/applications" });
     app.register(offerRoutes, { prefix: "/api/offers" });
     app.register(commissionRoutes, { prefix: "/api/commissions" });
+    app.register(dashboardRoutes, { prefix: "/api/dashboard" });
 
     // ============================================================
     // CORE ENDPOINTS

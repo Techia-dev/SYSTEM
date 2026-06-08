@@ -23,6 +23,12 @@ const applicationRoutes: FastifyPluginAsync = async (fastify) => {
         ApplicationsController.create
     );
 
+    fastify.delete<{ Params: { id: string } }>(
+        "/:id",
+        { preHandler: [fastify.requirePermission("applications:write")] },
+        ApplicationsController.delete
+    );
+
     fastify.put<{
         Params: { id: string };
         Body: UpdateApplicationStatusDto;

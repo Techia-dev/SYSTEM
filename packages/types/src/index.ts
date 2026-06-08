@@ -10,6 +10,7 @@ export type {
     Candidate,
     CreateCandidateDto,
     CreateCandidateResponse,
+    UpdateCandidateDto,
     ListCandidatesQueryDto,
     ListCandidatesResponse,
 } from "./candidates";
@@ -50,6 +51,9 @@ export type {
     MeResponse,
     LogoutResponse,
 } from "./auth";
+
+// Dashboard
+export type { DashboardStats, MonthlyAnalytics } from "./dashboard";
 
 // Domain Events
 export type {

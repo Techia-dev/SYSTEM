@@ -47,6 +47,15 @@ export class ApplicationsController {
         return reply.status(201).send(successResponse(result));
     }
 
+    static async delete(
+        request: FastifyRequest<{ Params: { id: string } }>,
+        reply: FastifyReply
+    ) {
+        const { id } = request.params;
+        const result = await service.delete(id);
+        return reply.send(successResponse(result));
+    }
+
     static async updateStatus(
         request: FastifyRequest<{
             Params: { id: string };

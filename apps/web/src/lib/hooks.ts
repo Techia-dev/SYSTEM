@@ -3,12 +3,15 @@ import { sdk } from "./sdk";
 import type {
   Candidate,
   CreateCandidateDto,
+  UpdateCandidateDto,
   Offer,
   CreateOfferDto,
   ApplicationWithRelations,
+  CreateApplicationDto,
   UpdateApplicationStatusDto,
   CommissionWithRelations,
   UpdateCommissionStatusDto,
+  DashboardStats,
 } from "@techia/types";
 
 const keys = {
@@ -16,6 +19,7 @@ const keys = {
   offers: { all: ["offers"] as const },
   applications: { all: ["applications"] as const },
   commissions: { all: ["commissions"] as const },
+  dashboard: { stats: ["dashboard", "stats"] as const },
 };
 
 export function useCandidates() {
@@ -43,6 +47,32 @@ export function useCreateCandidate() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (data: CreateCandidateDto) => sdk.candidates.create(data),
+    onSuccess: () => qc.invalidateQueries({ queryKey: keys.candidates.all }),
+  });
+}
+
+export function useUpdateCandidate() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, data }: { id: string; data: UpdateCandidateDto }) =>
+      sdk.candidates.update(id, data),
+    onSuccess: () => qc.invalidateQueries({ queryKey: keys.candidates.all }),
+  });
+}
+
+export function useDeleteCandidate() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => sdk.candidates.delete(id),
+    onSuccess: () => qc.invalidateQueries({ queryKey: keys.candidates.all }),
+  });
+}
+
+export function useUploadCv() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, file }: { id: string; file: File }) =>
+      sdk.candidates.uploadCv(id, file),
     onSuccess: () => qc.invalidateQueries({ queryKey: keys.candidates.all }),
   });
 }
@@ -83,6 +113,22 @@ export function useApplications() {
   });
 }
 
+export function useCreateApplication() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (data: CreateApplicationDto) => sdk.applications.create(data),
+    onSuccess: () => qc.invalidateQueries({ queryKey: keys.applications.all }),
+  });
+}
+
+export function useDeleteApplication() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => sdk.applications.delete(id),
+    onSuccess: () => qc.invalidateQueries({ queryKey: keys.applications.all }),
+  });
+}
+
 export function useUpdateApplicationStatus() {
   const qc = useQueryClient();
   return useMutation({
@@ -99,6 +145,20 @@ export function useCommissions() {
       const res = await sdk.commissions.list();
       return res.data;
     },
+  });
+}
+
+export function useDashboardStats() {
+  return useQuery({
+    queryKey: keys.dashboard.stats,
+    queryFn: () => sdk.dashboard.getStats(),
+  });
+}
+
+export function useDashboardAnalytics() {
+  return useQuery({
+    queryKey: ["dashboard", "analytics"],
+    queryFn: () => sdk.dashboard.getAnalytics(),
   });
 }
 

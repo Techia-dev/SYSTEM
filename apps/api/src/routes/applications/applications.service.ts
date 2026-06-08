@@ -123,6 +123,15 @@ export class ApplicationsService {
         };
     }
 
+    async delete(id: string) {
+        const application = await this.repository.findById(id);
+        if (!application) {
+            throw new NotFoundError("Application", id);
+        }
+        await this.repository.delete(id);
+        return { message: "Application deleted" };
+    }
+
     private emitStatusChangeEvent(
         applicationId: string,
         status: string,

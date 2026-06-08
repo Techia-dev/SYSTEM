@@ -90,18 +90,22 @@ model Offer {
 // ============================================================
 
 model Candidate {
-  id           String         @id @default(cuid())
-  name         String
-  phone        String
-  email        String?        @unique
-  level        CandidateLevel @default(junior)
+  id              String         @id @default(cuid())
+  name            String
+  phone           String
+  secondaryPhone  String?
+  email           String?        @unique
+  level           CandidateLevel @default(junior)
+  qualification   String?
+  experience      String?
+  cvUrl           String?
 
-  createdAt    DateTime       @default(now())
-  updatedAt    DateTime       @updatedAt
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
 
   // Relations
-  applications Application[]
-  commissions  Commission[]
+  applications    Application[]
+  commissions     Commission[]
 
   @@map("candidates")
 }

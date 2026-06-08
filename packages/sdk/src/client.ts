@@ -1,8 +1,3 @@
-/**
- * Techia SDK - HTTP Client
- * Base HTTP client with automatic error handling and response parsing
- */
-
 export type ClientConfig = {
     baseURL: string;
     timeout?: number;
@@ -51,40 +46,27 @@ export class HttpClient {
         };
     }
 
-    /**
-     * Set authorization header
-     */
     setAuthToken(token: string): void {
         this.headers["Authorization"] = `Bearer ${token}`;
     }
 
-    /**
-     * Clear authorization header
-     */
     clearAuthToken(): void {
         delete this.headers["Authorization"];
     }
 
-    /**
-     * Make a GET request
-     */
     async get<T>(path: string): Promise<T> {
         return this.request<T>(path, { method: "GET" });
     }
 
-    /**
-     * Make a POST request
-     */
-    async post<T>(path: string, data?: unknown): Promise<T> {
+    async post<T>(path: string, data?: unknown, init?: RequestInit): Promise<T> {
+        const isFormData = data instanceof FormData;
         return this.request<T>(path, {
             method: "POST",
-            body: data ? JSON.stringify(data) : undefined,
+            body: isFormData ? data : data ? JSON.stringify(data) : undefined,
+            ...init,
         });
     }
 
-    /**
-     * Make a PUT request
-     */
     async put<T>(path: string, data?: unknown): Promise<T> {
         return this.request<T>(path, {
             method: "PUT",
@@ -92,23 +74,17 @@ export class HttpClient {
         });
     }
 
-    /**
-     * Make a DELETE request
-     */
     async delete<T>(path: string): Promise<T> {
         return this.request<T>(path, { method: "DELETE" });
     }
 
-    /**
-     * Make a PATCH request
-     * Core request method with error handling
-     */
     async patch<T>(path: string, data?: unknown): Promise<T> {
         return this.request<T>(path, {
             method: "PATCH",
             body: data ? JSON.stringify(data) : undefined,
         });
     }
+
     private getAuthToken(): string | null {
         if (typeof window === "undefined") return null;
         return localStorage.getItem("auth_token");
@@ -116,13 +92,19 @@ export class HttpClient {
 
     private async request<T>(path: string, options: RequestInit): Promise<T> {
         const token = this.getAuthToken();
-        const requestHeaders = { ...this.headers };
+        const requestHeaders: Record<string, string> = {};
+
         if (token) {
             requestHeaders["Authorization"] = `Bearer ${token}`;
         }
 
+        const isFormData = options.body instanceof FormData;
+        const hasBody = options.body != null;
+        if (!isFormData && hasBody) {
+            Object.assign(requestHeaders, this.headers);
+        }
+
         const url = `${this.baseURL}${this.apiPrefix}${path}`;
-        console.log("[SDK]", url);
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), this.timeout);
 

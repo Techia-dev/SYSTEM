@@ -11,6 +11,7 @@ export { CandidatesResource } from "./modules/candidates";
 export { ApplicationsResource } from "./modules/applications";
 export { OffersResource } from "./modules/offers";
 export { CommissionsResource } from "./modules/commissions";
+export { DashboardResource } from "./modules/dashboard";
 
 // Re-export types from @techia/types
 export type {
@@ -50,4 +51,5 @@ export type {
     ApplicationStatus,
     CommissionStatus,
     CandidateLevel,
+    MonthlyAnalytics,
 } from "@techia/types";

@@ -2,6 +2,7 @@ import type {
     PaginatedResponse,
     Candidate,
     CreateCandidateDto,
+    UpdateCandidateDto,
 } from "@techia/types";
 
 import type { HttpClient } from "../client";
@@ -39,5 +40,28 @@ export class CandidatesResource {
 
     async getById(id: string): Promise<Candidate> {
         return this.client.get<Candidate>(`/candidates/${id}`);
+    }
+
+    async update(
+        id: string,
+        data: UpdateCandidateDto
+    ): Promise<{ id: string; message: string }> {
+        return this.client.put<{ id: string; message: string }>(
+            `/candidates/${id}`,
+            data
+        );
+    }
+
+    async delete(id: string): Promise<{ message: string }> {
+        return this.client.delete<{ message: string }>(`/candidates/${id}`);
+    }
+
+    async uploadCv(id: string, file: File): Promise<{ cvUrl: string }> {
+        const formData = new FormData();
+        formData.append("cv", file);
+        return this.client.post<{ cvUrl: string }>(
+            `/candidates/${id}/cv`,
+            formData
+        );
     }
 }

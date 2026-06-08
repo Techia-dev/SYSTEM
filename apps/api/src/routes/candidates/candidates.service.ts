@@ -1,7 +1,7 @@
 import { Prisma, CandidateLevel } from "@prisma/client";
-import type { ListCandidatesResponse, CreateCandidateDto, CandidateCreatedEvent } from "@techia/types";
+import type { ListCandidatesResponse, CreateCandidateDto, UpdateCandidateDto, CandidateCreatedEvent } from "@techia/types";
 import type { CandidatesRepository } from "./candidates.repository";
-import { ConflictError } from "../../shared/error";
+import { ConflictError, NotFoundError } from "../../shared/error";
 import { eventBus } from "../../shared/event-bus";
 
 export class CandidatesService {
@@ -51,7 +51,6 @@ export class CandidatesService {
         try {
             const candidate = await this.repository.create(input);
 
-            // Emit domain event AFTER successful creation (non-blocking)
             const event: CandidateCreatedEvent = {
                 eventType: "CANDIDATE_CREATED",
                 timestamp: new Date(),
@@ -79,5 +78,45 @@ export class CandidatesService {
             }
             throw error;
         }
+    }
+
+    async getById(id: string) {
+        const candidate = await this.repository.findById(id);
+        if (!candidate) {
+            throw new NotFoundError("Candidate", id);
+        }
+        return candidate;
+    }
+
+    async update(id: string, input: UpdateCandidateDto) {
+        const existing = await this.repository.findById(id);
+        if (!existing) {
+            throw new NotFoundError("Candidate", id);
+        }
+
+        try {
+            const candidate = await this.repository.update(id, input);
+            return {
+                id: candidate.id,
+                message: "Candidate updated",
+            };
+        } catch (error) {
+            if (error instanceof Prisma.PrismaClientKnownRequestError) {
+                if (error.code === "P2002") {
+                    const target = (error.meta?.target as string[] | undefined)?.[0];
+                    throw new ConflictError(`Candidate with this ${target || "field"} already exists`);
+                }
+            }
+            throw error;
+        }
+    }
+
+    async delete(id: string) {
+        const existing = await this.repository.findById(id);
+        if (!existing) {
+            throw new NotFoundError("Candidate", id);
+        }
+        await this.repository.delete(id);
+        return { message: "Candidate deleted" };
     }
 }

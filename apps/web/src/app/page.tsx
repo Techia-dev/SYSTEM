@@ -2,22 +2,18 @@
 
 import { PageShell } from "@/components/layout/Sidebar";
 import { StatCard } from "@/components/ui/StatCard";
+import { BarChart } from "@/components/ui/BarChart";
 import { formatCurrency } from "@/lib/utils";
-import { useCandidates, useApplications, useOffers, useCommissions } from "@/lib/hooks";
+import { useOffers, useDashboardStats, useDashboardAnalytics } from "@/lib/hooks";
 
 export default function DashboardPage() {
-  const { data: candidates = [], isLoading: cl } = useCandidates();
-  const { data: applications = [], isLoading: al } = useApplications();
   const { data: offers = [], isLoading: ol } = useOffers();
-  const { data: commissions = [], isLoading: col } = useCommissions();
+  const { data: stats, isLoading: sl } = useDashboardStats();
+  const { data: analytics = [], isLoading: al } = useDashboardAnalytics();
 
-  const loading = cl || al || ol || col;
+  const loading = ol || sl || al;
 
   const activeOffers = offers.filter((o) => o.isActive);
-  const pendingCommissions = commissions.filter((c) => c.status === "pending");
-  const overdue = commissions.filter(
-    (c) => c.status === "pending" && new Date(c.dueDate) < new Date(),
-  );
 
   return (
     <PageShell title="Dashboard">
@@ -34,18 +30,15 @@ export default function DashboardPage() {
           </>
         ) : (
           <>
-            <StatCard label="Candidates" value={String(candidates.length)} sub="Total registered" />
-            <StatCard label="Applications" value={String(applications.length)} sub="Total applications" />
-            <StatCard
-              label="Commissions"
-              value={formatCurrency(pendingCommissions.reduce((s, c) => s + c.amount, 0))}
-              sub={`${pendingCommissions.length} pending payout`}
-              trend={overdue.length > 0 ? { label: `${overdue.length} overdue`, direction: "down" } : undefined}
-            />
+            <StatCard label="Collected Commissions" value={formatCurrency(stats?.totalCollectedCommissions ?? 0)} sub="Total paid out" />
+            <StatCard label="Accepted" value={String(stats?.totalAcceptedCandidates ?? 0)} sub="Candidates hired" />
+            <StatCard label="Rejected" value={String(stats?.totalRejectedCandidates ?? 0)} sub="Candidates declined" />
             <StatCard label="Active Offers" value={String(activeOffers.length)} sub="Currently hiring" />
           </>
         )}
       </div>
+
+      <BarChart data={analytics} />
     </PageShell>
   );
 }

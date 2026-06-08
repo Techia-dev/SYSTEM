@@ -44,6 +44,15 @@ export class ApplicationsResource {
     }
 
     /**
+     * Delete application
+     */
+    async delete(id: string): Promise<{ message: string }> {
+        return this.client.delete<{ message: string }>(
+            `/applications/${id}`
+        );
+    }
+
+    /**
      * Update application status
      */
     async updateStatus(

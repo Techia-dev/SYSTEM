@@ -66,6 +66,10 @@ export class ApplicationsRepository {
         });
     }
 
+    async delete(id: string) {
+        return prisma.application.delete({ where: { id } });
+    }
+
     async updateStatusWithCommission(params: {
         id: string;
         status: ApplicationStatus;
