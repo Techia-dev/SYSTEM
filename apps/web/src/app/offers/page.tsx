@@ -1,179 +1,145 @@
 "use client";
 
-import { useState, useCallback, useEffect, useMemo } from "react";
+import { useState, useMemo } from "react";
 import { PageShell } from "@/components/layout/Sidebar";
 import {
   Table, TableHead, Th, TableBody, Tr, Td,
-  TableSkeleton, TableEmpty, AvatarCell,
+  TableSkeleton, TableEmpty,
 } from "@/components/ui/Table";
-import { LevelBadge } from "@/components/ui/Badge";
+import { OfferStatusBadge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { Modal, ModalFooter } from "@/components/ui/Modal";
-import { sdk } from "@/lib/sdk";
-import { formatDate } from "@techia/utils";
 import { getErrorMessage } from "@/lib/utils";
-import type { Candidate, CreateCandidateDto, CandidateLevel } from "@techia/types";
+import { useOffers, useCreateOffer, useDeactivateOffer } from "@/lib/hooks";
+import { filterOffers } from "./filters";
+import type { CreateOfferDto } from "@techia/types";
 
-const LEVELS: { value: CandidateLevel | "all"; label: string }[] = [
-  { value: "all", label: "All levels" },
-  { value: "junior", label: "Junior" },
-  { value: "mid", label: "Mid" },
-  { value: "senior", label: "Senior" },
-  { value: "lead", label: "Lead" },
-];
+export default function OffersPage() {
+  const { data: offers = [], isLoading, error, refetch } = useOffers();
+  const createOffer = useCreateOffer();
+  const deactivateOffer = useDeactivateOffer();
 
-export default function CandidatesPage() {
-  const [candidates, setCandidates] = useState<Candidate[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  const [levelFilter, setLevelFilter] = useState<CandidateLevel | "all">("all");
   const [search, setSearch] = useState("");
+  const [showInactive, setShowInactive] = useState(false);
 
   const [addOpen, setAddOpen] = useState(false);
-  const [saving, setSaving] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
-
-  const [form, setForm] = useState<CreateCandidateDto>({
-    name: "",
-    phone: "",
-    email: "",
-    level: "junior",
+  const [form, setForm] = useState<CreateOfferDto>({
+    title: "",
+    company: "",
+    description: "",
+    commission: 0,
+    commissionDelay: 0,
   });
 
-  const load = useCallback(async () => {
-    try {
-      setLoading(true);
-      setError(null);
-
-      const res = await sdk.candidates.list();
-
-      // FIX: SDK returns PaginatedResponse
-      setCandidates(res.data);
-
-    } catch (err) {
-      setError(getErrorMessage(err));
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    void load();
-  }, [load]);
-
-  const filtered = useMemo(() => {
-    const term = search.trim().toLowerCase();
-
-    return candidates.filter((c) => {
-      const matchLevel = levelFilter === "all" || c.level === levelFilter;
-
-      const matchSearch =
-        term === "" ||
-        c.name.toLowerCase().includes(term) ||
-        c.phone.includes(term) ||
-        (c.email ?? "").toLowerCase().includes(term);
-
-      return matchLevel && matchSearch;
-    });
-  }, [candidates, levelFilter, search]);
+  const filtered = useMemo(
+    () => filterOffers(offers, search, showInactive),
+    [offers, search, showInactive],
+  );
 
   function openAdd() {
-    setForm({ name: "", phone: "", email: "", level: "junior" });
+    setForm({ title: "", company: "", description: "", commission: 0, commissionDelay: 0 });
     setFormError(null);
     setAddOpen(true);
   }
 
   async function handleAdd() {
-    if (!form.name.trim() || !form.phone.trim()) {
-      setFormError("Name and phone are required.");
+    if (!form.title.trim()) {
+      setFormError("Offer title is required.");
       return;
     }
 
     try {
-      setSaving(true);
       setFormError(null);
-
-      await sdk.candidates.create({
-        name: form.name.trim(),
-        phone: form.phone.trim(),
-        email: form.email?.trim() || undefined,
-        level: form.level,
+      await createOffer.mutateAsync({
+        title: form.title.trim(),
+        company: form.company?.trim() || undefined,
+        description: form.description?.trim() || undefined,
+        commission: form.commission || undefined,
+        commissionDelay: form.commissionDelay || undefined,
       });
-
       setAddOpen(false);
-      await load();
-
     } catch (err) {
       setFormError(getErrorMessage(err));
-    } finally {
-      setSaving(false);
     }
   }
 
   return (
     <PageShell
-      title="Candidates"
+      title="Offers"
       action={
         <Button variant="primary" onClick={openAdd} icon={<PlusIcon />}>
-          New candidate
+          New offer
         </Button>
       }
     >
-      <div className="flex gap-2 mb-4">
+      <div className="flex gap-2 mb-4 items-center">
         <input
           type="text"
-          placeholder="Search name, phone, email…"
+          placeholder="Search title, company…"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          className="h-8 px-3 text-sm rounded-lg border border-zinc-200 bg-white w-64"
+          className="h-8 px-3 text-sm rounded-lg border border-zinc-200 bg-white text-zinc-800 placeholder:text-zinc-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 w-64"
         />
-
-        <select
-          value={levelFilter}
-          onChange={(e) => setLevelFilter(e.target.value as CandidateLevel | "all")}
-          className="h-8 px-2.5 text-sm rounded-lg border border-zinc-200 bg-white"
-        >
-          {LEVELS.map((l) => (
-            <option key={l.value} value={l.value}>
-              {l.label}
-            </option>
-          ))}
-        </select>
+        <label className="flex items-center gap-1.5 text-sm text-zinc-600">
+          <input
+            type="checkbox"
+            checked={showInactive}
+            onChange={(e) => setShowInactive(e.target.checked)}
+            className="rounded border-zinc-300"
+          />
+          Show inactive
+        </label>
       </div>
 
       {error && (
         <div className="mb-4 px-4 py-3 rounded-lg bg-red-50 border border-red-200 text-sm text-red-700 flex justify-between">
-          {error}
-          <button onClick={load} className="underline">Retry</button>
+          {getErrorMessage(error)}
+          <button onClick={() => refetch()} className="underline">Retry</button>
         </div>
       )}
 
       <Table>
         <TableHead>
           <tr>
-            <Th>Candidate</Th>
-            <Th>Phone</Th>
-            <Th>Level</Th>
-            <Th>Email</Th>
-            <Th>Joined</Th>
+            <Th>Title</Th>
+            <Th>Company</Th>
+            <Th>Commission</Th>
+            <Th>Status</Th>
+            <Th>Created</Th>
+            <Th></Th>
           </tr>
         </TableHead>
 
-        {loading ? (
-          <TableSkeleton cols={5} />
+        {isLoading ? (
+          <TableSkeleton cols={6} />
         ) : filtered.length === 0 ? (
-          <TableEmpty cols={5} message="No candidates found" />
+          <TableEmpty cols={6} message="No offers found" />
         ) : (
           <TableBody>
-            {filtered.map((c) => (
-              <Tr key={c.id}>
-                <Td><AvatarCell name={c.name} /></Td>
-                <Td>{c.phone}</Td>
-                <Td><LevelBadge level={c.level} /></Td>
-                <Td className="text-zinc-400">{c.email ?? "—"}</Td>
+            {filtered.map((o) => (
+              <Tr key={o.id}>
+                <Td><p className="font-medium text-zinc-800">{o.title}</p></Td>
+                <Td className="text-zinc-500">{o.company ?? "—"}</Td>
+                <Td>
+                  <span className="font-mono text-zinc-700">
+                    {new Intl.NumberFormat("en-EG", { style: "currency", currency: "EGP", minimumFractionDigits: 0 }).format(o.commission)}
+                  </span>
+                </Td>
+                <Td><OfferStatusBadge isActive={o.isActive} /></Td>
                 <Td className="text-zinc-400">
-                  {formatDate(new Date(c.createdAt))}
+                  {new Intl.DateTimeFormat("en-US", { dateStyle: "medium" }).format(new Date(o.createdAt))}
+                </Td>
+                <Td>
+                  {o.isActive && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => deactivateOffer.mutate(o.id)}
+                    >
+                      Deactivate
+                    </Button>
+                  )}
                 </Td>
               </Tr>
             ))}
@@ -184,80 +150,44 @@ export default function CandidatesPage() {
       <Modal
         open={addOpen}
         onClose={() => setAddOpen(false)}
-        title="New candidate"
-        description="Fill in the candidate's details."
+        title="New offer"
+        description="Fill in the offer details."
       >
         <div className="space-y-3">
-          <Field label="Full name *">
-            <input
-              value={form.name}
-              onChange={(e) => setForm({ ...form, name: e.target.value })}
-              className={inputCls}
-            />
+          <Field label="Title *">
+            <input value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} className={inputCls} />
           </Field>
-
-          <Field label="Phone *">
-            <input
-              value={form.phone}
-              onChange={(e) => setForm({ ...form, phone: e.target.value })}
-              className={inputCls}
-            />
+          <Field label="Company">
+            <input value={form.company ?? ""} onChange={(e) => setForm({ ...form, company: e.target.value })} className={inputCls} />
           </Field>
-
-          <Field label="Email">
-            <input
-              value={form.email}
-              onChange={(e) => setForm({ ...form, email: e.target.value })}
-              className={inputCls}
-            />
+          <Field label="Description">
+            <textarea value={form.description ?? ""} onChange={(e) => setForm({ ...form, description: e.target.value })} className={`${inputCls} resize-none h-20`} />
           </Field>
-
-          <Field label="Level">
-            <select
-              value={form.level}
-              onChange={(e) =>
-                setForm({ ...form, level: e.target.value as CandidateLevel })
-              }
-              className={inputCls}
-            >
-              <option value="junior">Junior</option>
-              <option value="mid">Mid</option>
-              <option value="senior">Senior</option>
-              <option value="lead">Lead</option>
-            </select>
+          <Field label="Commission (EGP)">
+            <input type="number" min={0} value={form.commission ?? 0} onChange={(e) => setForm({ ...form, commission: Number(e.target.value) })} className={inputCls} />
           </Field>
-
+          <Field label="Commission delay (days)">
+            <input type="number" min={0} value={form.commissionDelay ?? 0} onChange={(e) => setForm({ ...form, commissionDelay: Number(e.target.value) })} className={inputCls} />
+          </Field>
           {formError && <p className="text-sm text-red-600">{formError}</p>}
         </div>
-
         <ModalFooter
           onCancel={() => setAddOpen(false)}
           onConfirm={handleAdd}
-          confirmLabel="Add candidate"
-          loading={saving}
+          confirmLabel="Add offer"
+          loading={createOffer.isPending}
         />
       </Modal>
     </PageShell>
   );
 }
 
-const inputCls =
-  "w-full h-9 px-3 text-sm rounded-lg border border-zinc-200 bg-white text-zinc-800";
+const inputCls = "w-full h-9 px-3 text-sm rounded-lg border border-zinc-200 bg-white text-zinc-800 focus:outline-none focus:ring-2 focus:ring-emerald-500";
 
-import { ReactNode } from "react";
-
-function Field({
-  label,
-  children,
-}: {
-  label: string;
-  children: ReactNode;
-}) {
+function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div className="flex flex-col gap-1">
-      <label className="text-xs font-medium text-zinc-500">
-        {label}
-      </label>
+      <label className="text-xs font-medium text-zinc-500">{label}</label>
       {children}
     </div>
   );

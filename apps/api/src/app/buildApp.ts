@@ -1,5 +1,6 @@
 import Fastify from "fastify";
 import cors from "@fastify/cors";
+import rateLimit from "@fastify/rate-limit";
 import { config } from "../config";
 
 // Plugins
@@ -10,16 +11,24 @@ import { authPlugin } from "@techia/admin-api";
 import candidateRoutes from "../routes/candidates/candidates.routes";
 import applicationRoutes from "../routes/applications";
 import offerRoutes from "../routes/offers/offers.routes";
-import commissionRoutes from "../routes/Commissions/commissions.routes";
+import commissionRoutes from "../routes/commissions/commissions.routes";
 import { authRoutes } from "@techia/admin-api";
+
+// Shared
+import { AppError, ValidationError } from "../shared/error";
+import { errorResponse } from "../shared/response";
 
 // Workers
 import { registerWorkers } from "../workers";
 
+const corsOrigins = config.corsOrigins.length > 0
+    ? config.corsOrigins
+    : ["http://localhost:3000"];
+
 export const buildApp = () => {
     const app = Fastify({
         logger:
-            config.nodeEnv === "development"
+            config.nodeEnv === "test"
                 ? {
                     transport: {
                         target: "pino-pretty",
@@ -40,32 +49,37 @@ export const buildApp = () => {
     app.setErrorHandler((error, _request, reply) => {
         app.log.error(error);
 
-        const statusCode =
-            typeof error === "object" &&
-                error !== null &&
-                "statusCode" in error &&
-                typeof (error as Record<string, unknown>).statusCode === "number"
-                ? (error as Record<string, number>).statusCode
-                : 500;
+        if (error instanceof AppError) {
+            const fields = error instanceof ValidationError ? error.fields : undefined;
+            return reply
+                .status(error.statusCode)
+                .send(errorResponse(error.message, error.code ?? "APP_ERROR", fields));
+        }
 
-        const message =
-            error instanceof Error ? error.message : "Internal Server Error";
+        const statusCode = (error as Record<string, number>).statusCode ?? 500;
+        const message = error instanceof Error ? error.message : "Internal Server Error";
 
-        reply.status(statusCode).send({
-            message,
-        });
+        reply.status(statusCode).send(errorResponse(message, "UNKNOWN_ERROR"));
     });
 
     // ============================================================
-    // CORS (FIX for OPTIONS 404 + login failure)
+    // CORS
     // ============================================================
 
     app.register(cors, {
-        origin: [
-            "http://localhost:3000",
-        ],
+        origin: corsOrigins,
         credentials: true,
         methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+    });
+
+    // ============================================================
+    // RATE LIMIT (before auth & routes)
+    // ============================================================
+
+    app.register(rateLimit, {
+        global: true,
+        max: 100,
+        timeWindow: "1 minute",
     });
 
     // ============================================================

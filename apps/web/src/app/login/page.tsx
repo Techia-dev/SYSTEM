@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { authApi, setAuthToken, isAuthenticated } from "@/lib/api";
+import { authApi, setAuthToken, isAuthenticated } from "@/lib/auth";
 import { sdk } from "@/lib/sdk";
 import { getErrorMessage } from "@/lib/utils";
 
@@ -36,11 +36,9 @@ export default function LoginPage() {
                 password,
             });
 
-            // save token
             setAuthToken(res.token);
-
-            // inject token into SDK immediately
             sdk.setAuthToken(res.token);
+            document.cookie = `auth_token=${res.token}; path=/; max-age=${60 * 60 * 24}; SameSite=Lax`;
 
             router.replace("/");
         } catch (err) {

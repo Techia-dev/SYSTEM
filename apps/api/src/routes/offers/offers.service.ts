@@ -4,6 +4,8 @@ import type {
     UpdateOfferDto,
     PaginatedResponse,
 } from "@techia/types";
+import type { Prisma } from "@prisma/client";
+import { NotFoundError } from "../../shared/error";
 
 export class OffersService {
     constructor(private readonly repository: OffersRepository) {}
@@ -24,8 +26,8 @@ export class OffersService {
             data: offers,
             total,
             page: params.page,
-            page_size: params.pageSize,
-            total_pages: Math.ceil(total / params.pageSize),
+            pageSize: params.pageSize,
+            totalPages: Math.ceil(total / params.pageSize),
         };
     }
 
@@ -33,6 +35,10 @@ export class OffersService {
         const offer = await this.repository.findUnique(id, {
             _count: { select: { applications: true } },
         });
+
+        if (!offer) {
+            throw new NotFoundError("Offer", id);
+        }
 
         return offer;
     }
@@ -57,12 +63,10 @@ export class OffersService {
         const existing = await this.repository.findUnique(id);
 
         if (!existing) {
-            throw Object.assign(new Error("Offer not found"), {
-                statusCode: 404,
-            });
+            throw new NotFoundError("Offer", id);
         }
 
-        const data: Record<string, unknown> = {};
+        const data: Prisma.OfferUpdateInput = {};
         if (input.title !== undefined) data.title = input.title;
         if (input.company !== undefined) data.company = input.company;
         if (input.description !== undefined) data.description = input.description;
@@ -79,9 +83,7 @@ export class OffersService {
         const existing = await this.repository.findUnique(id);
 
         if (!existing) {
-            throw Object.assign(new Error("Offer not found"), {
-                statusCode: 404,
-            });
+            throw new NotFoundError("Offer", id);
         }
 
         await this.repository.update(id, { isActive: false });

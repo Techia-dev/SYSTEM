@@ -15,8 +15,8 @@ export function useCandidates() {
             setLoading(true);
             setError(null);
 
-            const data = await candidatesService.list();
-            setCandidates(data);
+            const res = await candidatesService.list();
+            setCandidates(res.data);
         } catch (err) {
             setError(getErrorMessage(err));
         } finally {

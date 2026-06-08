@@ -13,6 +13,7 @@
   "dependencies": {
     "@fastify/cors": "^11.2.0",
     "@fastify/jwt": "^10.1.0",
+    "@fastify/rate-limit": "^10.0.0",
     "@prisma/client": "^5.22.0",
     "@techia/admin-api": "workspace:*",
     "@techia/db": "workspace:*",

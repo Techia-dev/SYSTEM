@@ -15,8 +15,8 @@ export function useOffers() {
             setLoading(true);
             setError(null);
 
-            const data = await offersService.list();
-            setOffers(data);
+            const res = await offersService.list();
+            setOffers(res.data);
         } catch (err) {
             setError(getErrorMessage(err));
         } finally {

@@ -4,6 +4,7 @@ import type {
     UpdateCommissionResponse,
     PaginatedResponse,
 } from "@techia/types";
+import { NotFoundError } from "../../shared/error";
 
 export class CommissionsService {
     constructor(private readonly repository: CommissionsRepository) {}
@@ -42,8 +43,8 @@ export class CommissionsService {
             data: commissions,
             total,
             page: params.page,
-            page_size: params.pageSize,
-            total_pages: Math.ceil(total / params.pageSize),
+            pageSize: params.pageSize,
+            totalPages: Math.ceil(total / params.pageSize),
         };
     }
 
@@ -56,6 +57,10 @@ export class CommissionsService {
             },
         });
 
+        if (!commission) {
+            throw new NotFoundError("Commission", id);
+        }
+
         return commission;
     }
 
@@ -63,6 +68,12 @@ export class CommissionsService {
         id: string,
         input: UpdateCommissionStatusDto
     ): Promise<UpdateCommissionResponse> {
+        const existing = await this.repository.findUnique(id);
+
+        if (!existing) {
+            throw new NotFoundError("Commission", id);
+        }
+
         const { status } = input;
 
         const commission = await this.repository.update(id, {

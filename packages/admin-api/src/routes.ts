@@ -42,6 +42,12 @@ const authRoutes: FastifyPluginAsync = async (fastify) => {
                     },
                 },
             },
+            config: {
+                rateLimit: {
+                    max: 5,
+                    timeWindow: "1 minute",
+                },
+            },
         },
         async (request, reply) => {
             const { email, password } = request.body;

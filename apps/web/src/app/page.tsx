@@ -1,58 +1,23 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
 import { PageShell } from "@/components/layout/Sidebar";
 import { StatCard } from "@/components/ui/StatCard";
-import { api } from "@/lib/api";
 import { formatCurrency } from "@/lib/utils";
-
-
-interface DashboardStats {
-  candidates: number;
-  applications: number;
-  activeOffers: number;
-  pendingCommissions: number;
-  pendingCommissionsAmount: number;
-  overdueCount: number;
-}
+import { useCandidates, useApplications, useOffers, useCommissions } from "@/lib/hooks";
 
 export default function DashboardPage() {
-  const [stats, setStats] = useState<DashboardStats | null>(null);
-  const [loading, setLoading] = useState(true);
+  const { data: candidates = [], isLoading: cl } = useCandidates();
+  const { data: applications = [], isLoading: al } = useApplications();
+  const { data: offers = [], isLoading: ol } = useOffers();
+  const { data: commissions = [], isLoading: col } = useCommissions();
 
-  const load = useCallback(async () => {
-    try {
-      const [candidates, applications, offers, commissions] = await Promise.all([
-        api.candidates.list(),
-        api.applications.list(),
-        api.offers.list(),
-        api.commissions.list(),
-      ]);
+  const loading = cl || al || ol || col;
 
-      const activeOffers = offers.filter((o) => o.isActive);
-      const pendingCommissions = commissions.filter((c) => c.status === "pending");
-      const overdue = commissions.filter(
-        (c) => c.status === "pending" && new Date(c.dueDate) < new Date(),
-      );
-
-      setStats({
-        candidates: candidates.length,
-        applications: applications.length,
-        activeOffers: activeOffers.length,
-        pendingCommissions: pendingCommissions.length,
-        pendingCommissionsAmount: pendingCommissions.reduce((sum, c) => sum + c.amount, 0),
-        overdueCount: overdue.length,
-      });
-    } catch {
-      setStats(null);
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    void load();
-  }, [load]);
+  const activeOffers = offers.filter((o) => o.isActive);
+  const pendingCommissions = commissions.filter((c) => c.status === "pending");
+  const overdue = commissions.filter(
+    (c) => c.status === "pending" && new Date(c.dueDate) < new Date(),
+  );
 
   return (
     <PageShell title="Dashboard">
@@ -67,38 +32,18 @@ export default function DashboardPage() {
               </div>
             ))}
           </>
-        ) : stats ? (
+        ) : (
           <>
-            <StatCard
-              label="Candidates"
-              value={String(stats.candidates)}
-              sub="Total registered"
-            />
-            <StatCard
-              label="Applications"
-              value={String(stats.applications)}
-              sub="Total applications"
-            />
+            <StatCard label="Candidates" value={String(candidates.length)} sub="Total registered" />
+            <StatCard label="Applications" value={String(applications.length)} sub="Total applications" />
             <StatCard
               label="Commissions"
-              value={formatCurrency(stats.pendingCommissionsAmount)}
-              sub={`${stats.pendingCommissions} pending payout`}
-              trend={
-                stats.overdueCount > 0
-                  ? { label: `${stats.overdueCount} overdue`, direction: "down" }
-                  : undefined
-              }
+              value={formatCurrency(pendingCommissions.reduce((s, c) => s + c.amount, 0))}
+              sub={`${pendingCommissions.length} pending payout`}
+              trend={overdue.length > 0 ? { label: `${overdue.length} overdue`, direction: "down" } : undefined}
             />
-            <StatCard
-              label="Active Offers"
-              value={String(stats.activeOffers)}
-              sub="Currently hiring"
-            />
+            <StatCard label="Active Offers" value={String(activeOffers.length)} sub="Currently hiring" />
           </>
-        ) : (
-          <div className="col-span-4 text-center text-sm text-zinc-400 py-10">
-            Failed to load dashboard data.
-          </div>
         )}
       </div>
     </PageShell>

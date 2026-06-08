@@ -1,5 +1,4 @@
 import { z } from "zod";
-import type { CandidateLevel } from "@techia/types";
 
 /**
  * Candidate domain validation schemas

@@ -17,8 +17,8 @@ export function useApplications() {
             setLoading(true);
             setError(null);
 
-            const data = await applicationsService.list();
-            setApplications(data);
+            const res = await applicationsService.list();
+            setApplications(res.data);
         } catch (err) {
             setError(getErrorMessage(err));
         } finally {

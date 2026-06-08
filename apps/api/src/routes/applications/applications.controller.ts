@@ -7,8 +7,7 @@ import type {
 } from "@techia/types";
 import { validate } from "../../shared/validation";
 import { ListApplicationsQuerySchema, CreateApplicationDtoSchema, UpdateApplicationStatusDtoSchema } from "./applications.schema";
-import type { AppError } from "../../shared/error";
-import { successResponse, errorResponse } from "../../shared/response";
+import { successResponse } from "../../shared/response";
 
 const service = new ApplicationsService(new ApplicationsRepository());
 
@@ -19,54 +18,33 @@ export class ApplicationsController {
         }>,
         reply: FastifyReply
     ) {
-        try {
-            const query = validate(ListApplicationsQuerySchema, request.query);
+        const query = validate(ListApplicationsQuerySchema, request.query);
 
-            const result = await service.list({
-                page: Math.max(1, Number(query?.page) || 1),
-                pageSize: Math.min(100, Math.max(1, Number(query?.page_size) || 50)),
-                status: query?.status,
-            });
+        const result = await service.list({
+            page: Math.max(1, Number(query?.page) || 1),
+            pageSize: Math.min(100, Math.max(1, Number(query?.page_size) || 50)),
+            status: query?.status,
+        });
 
-            return reply.send(successResponse(result));
-        } catch (error) {
-            const err = error as AppError;
-            return reply.status(err.statusCode ?? 500).send(
-                errorResponse(err.message, err.code ?? "UNKNOWN_ERROR")
-            );
-        }
+        return reply.send(successResponse(result));
     }
 
     static async getById(
         request: FastifyRequest<{ Params: { id: string } }>,
         reply: FastifyReply
     ) {
-        try {
-            const { id } = request.params;
-            const application = await service.getById(id);
-            return reply.send(successResponse(application));
-        } catch (error) {
-            const err = error as AppError;
-            return reply.status(err.statusCode ?? 500).send(
-                errorResponse(err.message, err.code ?? "UNKNOWN_ERROR")
-            );
-        }
+        const { id } = request.params;
+        const application = await service.getById(id);
+        return reply.send(successResponse(application));
     }
 
     static async create(
         request: FastifyRequest<{ Body: CreateApplicationDto }>,
         reply: FastifyReply
     ) {
-        try {
-            const input = validate(CreateApplicationDtoSchema, request.body);
-            const result = await service.create(input);
-            return reply.status(201).send(successResponse(result));
-        } catch (error) {
-            const err = error as AppError;
-            return reply.status(err.statusCode ?? 500).send(
-                errorResponse(err.message, err.code ?? "UNKNOWN_ERROR")
-            );
-        }
+        const input = validate(CreateApplicationDtoSchema, request.body);
+        const result = await service.create(input);
+        return reply.status(201).send(successResponse(result));
     }
 
     static async updateStatus(
@@ -76,16 +54,9 @@ export class ApplicationsController {
         }>,
         reply: FastifyReply
     ) {
-        try {
-            const { id } = request.params;
-            const body = validate(UpdateApplicationStatusDtoSchema, request.body);
-            const result = await service.updateStatus(id, body);
-            return reply.send(successResponse(result));
-        } catch (error) {
-            const err = error as AppError;
-            return reply.status(err.statusCode ?? 500).send(
-                errorResponse(err.message, err.code ?? "UNKNOWN_ERROR")
-            );
-        }
+        const { id } = request.params;
+        const body = validate(UpdateApplicationStatusDtoSchema, request.body);
+        const result = await service.updateStatus(id, body);
+        return reply.send(successResponse(result));
     }
 }

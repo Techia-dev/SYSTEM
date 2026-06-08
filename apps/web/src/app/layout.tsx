@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { AppShell } from "@/components/layout/AppShell";
+import { QueryProvider } from "@/providers/query-provider";
+import { ErrorBoundary } from "@/components/ui/ErrorBoundary";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -30,7 +32,11 @@ export default function RootLayout({
         suppressHydrationWarning
       >
       <body className="h-full bg-zinc-50">
-        <AppShell>{children}</AppShell>
+        <ErrorBoundary>
+          <QueryProvider>
+            <AppShell>{children}</AppShell>
+          </QueryProvider>
+        </ErrorBoundary>
       </body>
     </html>
   );

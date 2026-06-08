@@ -1,7 +1,7 @@
 import { Prisma, CandidateLevel } from "@prisma/client";
 import type { ListCandidatesResponse, CreateCandidateDto, CandidateCreatedEvent } from "@techia/types";
 import type { CandidatesRepository } from "./candidates.repository";
-import { ValidationError, ConflictError } from "../../shared/error";
+import { ConflictError } from "../../shared/error";
 import { eventBus } from "../../shared/event-bus";
 
 export class CandidatesService {

@@ -83,6 +83,7 @@ class AuditLogService {
     }
 
     private extractMetadata(event: DomainEvent): Record<string, unknown> {
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
         const { eventType, timestamp, aggregateId, ...rest } = event;
         return rest;
     }

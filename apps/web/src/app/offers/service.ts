@@ -1,10 +1,10 @@
-import { api } from "@/lib/api";
+import { sdk } from "@/lib/sdk";
 import type { CreateOfferDto, UpdateOfferDto } from "@techia/types";
 
 export const offersService = {
-    list: () => api.offers.list(),
-    create: (data: CreateOfferDto) => api.offers.create(data),
+    list: () => sdk.offers.list(),
+    create: (data: CreateOfferDto) => sdk.offers.create(data),
     update: (id: string, data: UpdateOfferDto) =>
-        api.offers.update(id, data),
-    deactivate: (id: string) => api.offers.deactivate(id),
+        sdk.offers.update(id, data),
+    deactivate: (id: string) => sdk.offers.deactivate(id),
 };

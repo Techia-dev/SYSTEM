@@ -1,9 +1,9 @@
-import { api } from "@/lib/api";
+import { sdk } from "@/lib/sdk";
 import type { CreateApplicationDto, UpdateApplicationStatusDto } from "@techia/types";
 
 export const applicationsService = {
-    list: () => api.applications.list(),
-    create: (data: CreateApplicationDto) => api.applications.create(data),
+    list: () => sdk.applications.list(),
+    create: (data: CreateApplicationDto) => sdk.applications.create(data),
     updateStatus: (id: string, data: UpdateApplicationStatusDto) =>
-        api.applications.updateStatus(id, data),
+        sdk.applications.updateStatus(id, data),
 };

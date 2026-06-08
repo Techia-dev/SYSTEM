@@ -1,7 +1,7 @@
-import { api } from "@/lib/api";
+import { sdk } from "@/lib/sdk";
 import type { CreateCandidateDto } from "@techia/types";
 
 export const candidatesService = {
-    list: () => api.candidates.list(),
-    create: (data: CreateCandidateDto) => api.candidates.create(data),
+    list: () => sdk.candidates.list(),
+    create: (data: CreateCandidateDto) => sdk.candidates.create(data),
 };

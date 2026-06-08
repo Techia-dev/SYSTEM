@@ -1,3 +1,5 @@
+import type { Prisma } from "@prisma/client";
+import { ApplicationStatus } from "@prisma/client";
 import type {
     UpdateStatusResponse,
     CreateApplicationDto,
@@ -5,9 +7,11 @@ import type {
     CreateApplicationResponse,
     ApplicationAcceptedEvent,
     ApplicationRejectedEvent,
+    CommissionCreatedEvent,
 } from "@techia/types";
 import type { ApplicationsRepository } from "./applications.repository";
-import { NotFoundError, ValidationError, ConflictError } from "../../shared/error";
+import { prisma } from "@techia/db";
+import { NotFoundError, ConflictError, ValidationError } from "../../shared/error";
 import { eventBus } from "../../shared/event-bus";
 
 export class ApplicationsService {
@@ -20,12 +24,19 @@ export class ApplicationsService {
     }) {
         const skip = (params.page - 1) * params.pageSize;
 
-        const applications = await this.repository.findMany(skip, params.pageSize);
+        const where: Prisma.ApplicationWhereInput | undefined = params.status ? { status: params.status as ApplicationStatus } : undefined;
+
+        const [applications, total] = await Promise.all([
+            this.repository.findMany(skip, params.pageSize, where),
+            this.repository.count(where),
+        ]);
 
         return {
             data: applications,
+            total,
             page: params.page,
             pageSize: params.pageSize,
+            totalPages: Math.ceil(total / params.pageSize),
         };
     }
 
@@ -39,19 +50,39 @@ export class ApplicationsService {
         return application;
     }
 
-    async create(_input: CreateApplicationDto): Promise<CreateApplicationResponse> {
-        // TODO: implement create logic with proper validations
+    async create(input: CreateApplicationDto): Promise<CreateApplicationResponse> {
+        const { candidateId, offerId } = input;
+
+        const [candidate, offer] = await Promise.all([
+            prisma.candidate.findUnique({ where: { id: candidateId } }),
+            prisma.offer.findUnique({ where: { id: offerId } }),
+        ]);
+
+        if (!candidate) {
+            throw new NotFoundError("Candidate", candidateId);
+        }
+
+        if (!offer) {
+            throw new NotFoundError("Offer", offerId);
+        }
+
+        if (!offer.isActive) {
+            throw new ValidationError("Offer is no longer active");
+        }
+
+        const duplicate = await this.repository.existsByCandidateAndOffer(candidateId, offerId);
+        if (duplicate) {
+            throw new ConflictError("An application already exists for this candidate and offer");
+        }
+
+        const application = await this.repository.create(input);
+
         return {
-            id: "temp-id",
+            id: application.id,
             message: "Application created",
         };
     }
 
-    /**
-     * Update application status atomically
-     * If status changes to "accepted", commission is created in the same transaction
-     * Emits domain events after successful transaction
-     */
     async updateStatus(id: string, data: UpdateApplicationStatusDto): Promise<UpdateStatusResponse> {
         const application = await this.repository.findById(id);
 
@@ -59,14 +90,32 @@ export class ApplicationsService {
             throw new NotFoundError("Application", id);
         }
 
-        // Use atomic transaction for status update + commission creation
         await this.repository.updateStatusWithCommission({
             id,
             status: data.status,
         });
 
-        // Emit domain event AFTER transaction succeeds (non-blocking)
         this.emitStatusChangeEvent(id, data.status, application.candidateId, application.offerId);
+
+        if (data.status === "accepted") {
+            const commission = await this.repository.findCommissionByApplicationId(id);
+            if (commission) {
+                const event: CommissionCreatedEvent = {
+                    eventType: "COMMISSION_CREATED",
+                    timestamp: new Date(),
+                    aggregateId: commission.id,
+                    commissionId: commission.id,
+                    applicationId: id,
+                    candidateId: application.candidateId,
+                    offerId: application.offerId,
+                    amount: commission.amount,
+                    dueDate: commission.dueDate,
+                };
+                eventBus.emit(event).catch((error) => {
+                    console.error("Error emitting COMMISSION_CREATED event:", error);
+                });
+            }
+        }
 
         return {
             success: true,
@@ -74,10 +123,6 @@ export class ApplicationsService {
         };
     }
 
-    /**
-     * Emit status change event
-     * Non-blocking - emitted after response sent
-     */
     private emitStatusChangeEvent(
         applicationId: string,
         status: string,

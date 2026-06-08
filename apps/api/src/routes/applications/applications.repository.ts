@@ -1,12 +1,13 @@
 import { prisma } from "@techia/db";
+import type { Prisma } from "@prisma/client";
 import type { ApplicationStatus } from "@techia/types";
-import { NotFoundError } from "../../shared/error";
 
 export class ApplicationsRepository {
-    async findMany(skip: number, take: number) {
+    async findMany(skip: number, take: number, where?: Prisma.ApplicationWhereInput) {
         return prisma.application.findMany({
             skip,
             take,
+            where,
             include: {
                 candidate: true,
                 offer: true,
@@ -26,20 +27,50 @@ export class ApplicationsRepository {
         });
     }
 
-    async count(where?: { status?: string }) {
-        return prisma.application.count();
+    async count(where?: Prisma.ApplicationWhereInput): Promise<number> {
+        return prisma.application.count({ where });
     }
 
-    /**
-     * ATOMIC TRANSACTION: Update application status + create commission if accepted
-     * This ensures both operations succeed or both fail
-     */
+    async existsByCandidateAndOffer(candidateId: string, offerId: string): Promise<boolean> {
+        const count = await prisma.application.count({
+            where: { candidateId, offerId },
+        });
+        return count > 0;
+    }
+
+    async create(data: {
+        candidateId: string;
+        offerId: string;
+        source?: string;
+        assignedTo?: string;
+        status?: ApplicationStatus;
+    }) {
+        return prisma.application.create({
+            data: {
+                candidateId: data.candidateId,
+                offerId: data.offerId,
+                source: data.source ?? null,
+                assignedTo: data.assignedTo ?? null,
+                status: data.status ?? "applied",
+            },
+            include: {
+                candidate: true,
+                offer: true,
+            },
+        });
+    }
+
+    async findCommissionByApplicationId(applicationId: string) {
+        return prisma.commission.findUnique({
+            where: { applicationId },
+        });
+    }
+
     async updateStatusWithCommission(params: {
         id: string;
         status: ApplicationStatus;
     }) {
         return prisma.$transaction(async (tx) => {
-            // Step 1: Update application status
             const application = await tx.application.update({
                 where: { id: params.id },
                 data: { status: params.status },
@@ -49,7 +80,6 @@ export class ApplicationsRepository {
                 },
             });
 
-            // Step 2: If accepted, create commission
             if (params.status === "accepted") {
                 const dueDate = new Date();
                 dueDate.setDate(dueDate.getDate() + (application.offer?.commissionDelay || 0));

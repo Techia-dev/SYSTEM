@@ -6,6 +6,7 @@ import type {
 } from "@techia/types";
 
 const routes: FastifyPluginAsync = async (fastify) => {
+    fastify.addHook("onRequest", fastify.requirePermission("candidates:read"));
 
     fastify.get<{
         Querystring: ListCandidatesQueryDto;
@@ -13,7 +14,11 @@ const routes: FastifyPluginAsync = async (fastify) => {
 
     fastify.post<{
         Body: CreateCandidateDto;
-    }>("/", CandidatesController.create);
+    }>(
+        "/",
+        { preHandler: [fastify.requirePermission("candidates:write")] },
+        CandidatesController.create
+    );
 };
 
 export default routes;
