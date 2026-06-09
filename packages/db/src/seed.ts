@@ -8,6 +8,10 @@ async function main() {
     const adminPassword =
         process.env.SEED_ADMIN_PASSWORD ?? "ChangeMe123!";
 
+    if (process.env.NODE_ENV === "production" && !process.env.SEED_ADMIN_PASSWORD) {
+        throw new Error("SEED_ADMIN_PASSWORD must be set in production");
+    }
+
     const existing = await prisma.user.findUnique({
         where: {
             email: adminEmail,

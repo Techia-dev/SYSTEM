@@ -1,5 +1,6 @@
 import Fastify from "fastify";
 import cors from "@fastify/cors";
+import helmet from "@fastify/helmet";
 import rateLimit from "@fastify/rate-limit";
 import multipart from "@fastify/multipart";
 import { config } from "../config";
@@ -29,19 +30,18 @@ const corsOrigins = config.corsOrigins.length > 0
 
 export const buildApp = () => {
     const app = Fastify({
-        logger:
-            config.nodeEnv === "test"
-                ? {
-                    transport: {
-                        target: "pino-pretty",
-                        options: {
-                            translateTime: "HH:MM:ss",
-                            ignore: "pid,hostname",
-                            colorize: true,
-                        },
+        logger: config.nodeEnv === "production"
+            ? { level: config.logLevel }
+            : {
+                transport: {
+                    target: "pino-pretty",
+                    options: {
+                        translateTime: "HH:MM:ss",
+                        ignore: "pid,hostname",
+                        colorize: true,
                     },
-                }
-                : true,
+                },
+            },
     });
 
     // ============================================================
@@ -58,11 +58,14 @@ export const buildApp = () => {
                 .send(errorResponse(error.message, error.code ?? "APP_ERROR", fields));
         }
 
-        const statusCode = (error as Record<string, number>).statusCode ?? 500;
-        const message = error instanceof Error ? error.message : "Internal Server Error";
-
-        reply.status(statusCode).send(errorResponse(message, "UNKNOWN_ERROR"));
+        reply.status(500).send(errorResponse("Internal Server Error", "UNKNOWN_ERROR"));
     });
+
+    // ============================================================
+    // SECURITY HEADERS
+    // ============================================================
+
+    app.register(helmet);
 
     // ============================================================
     // CORS

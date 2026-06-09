@@ -129,6 +129,7 @@ async function authPlugin(
                         success: false,
                         error: "Forbidden - insufficient role",
                     });
+                    return;
                 }
             },
     );
@@ -147,6 +148,7 @@ async function authPlugin(
                         success: false,
                         error: "Forbidden - insufficient permission",
                     });
+                    return;
                 }
             },
     );

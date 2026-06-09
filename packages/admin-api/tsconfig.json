@@ -5,7 +5,9 @@
     "outDir": "./dist",
     "declaration": true,
     "declarationMap": true,
-    "lib": ["ES2022"]
+    "lib": ["ES2022"],
+    "module": "node16",
+    "moduleResolution": "node16"
   },
   "include": ["src"],
   "exclude": ["node_modules", "dist"]

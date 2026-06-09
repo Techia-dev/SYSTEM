@@ -5,7 +5,9 @@
     "outDir": "./dist",
     "declaration": true,
     "declarationMap": true,
-    "emitDeclarationOnly": false
+    "emitDeclarationOnly": false,
+    "module": "node16",
+    "moduleResolution": "node16"
   },
   "include": ["src"]
 }

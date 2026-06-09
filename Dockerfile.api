@@ -18,11 +18,17 @@ FROM base AS runner
 WORKDIR /app
 ENV NODE_ENV=production
 
-RUN addgroup --system --gid 1001 nodejs
-RUN adduser --system --uid 1001 fastify
+COPY --from=deps /app/pnpm-lock.yaml /app/pnpm-workspace.yaml /app/package.json /app/turbo.json ./
+COPY --from=deps /app/packages/ ./packages/
+COPY --from=builder /app/apps/api/dist/ ./apps/api/dist/
+COPY --from=builder /app/packages/types/dist/ ./packages/types/dist/
+COPY --from=builder /app/packages/db/dist/ ./packages/db/dist/
+COPY --from=builder /app/packages/db/prisma/ ./packages/db/prisma/
+COPY --from=builder /app/packages/admin-api/dist/ ./packages/admin-api/dist/
+COPY --from=builder /app/packages/utils/dist/ ./packages/utils/dist/
 
-COPY --from=builder --chown=fastify:nodejs /app .
+RUN pnpm install --frozen-lockfile --prod
 
-USER fastify
+USER node
 EXPOSE 4000
-CMD ["sh", "-c", "pnpm --filter @techia/db run db:migrate:prod && node apps/api/dist/server.js"]
+CMD ["node", "apps/api/dist/index.js"]
