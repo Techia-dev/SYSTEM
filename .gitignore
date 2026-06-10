@@ -9,6 +9,10 @@ dist
 coverage
 .DS_Store
 apps/*/pnpm-lock.yaml
+packages/*/pnpm-lock.yaml
+*.tsbuildinfo
+apps/api/uploads/
+apps/api/test_*.txt
 apps/*/pnpm-workspace.yaml
 packages/db/src/*.js
 packages/db/src/*.d.ts
