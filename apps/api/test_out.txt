@@ -1,5 +1,20 @@
 [Workers] All event listeners registered
-[06:58:44] [32mINFO[39m: [36mServer listening at http://127.0.0.1:4000[39m
-[06:58:44] [32mINFO[39m: [36mServer listening at http://172.31.224.1:4000[39m
-[06:58:44] [32mINFO[39m: [36mServer listening at http://172.30.208.1:4000[39m
-[06:58:44] [32mINFO[39m: [36mServer listening at http://192.168.1.4:4000[39m
+[23:39:28] [32mINFO[39m: [36mServer listening at http://127.0.0.1:4000[39m
+[23:39:28] [32mINFO[39m: [36mServer listening at http://172.31.224.1:4000[39m
+[23:39:28] [32mINFO[39m: [36mServer listening at http://172.30.208.1:4000[39m
+[23:39:28] [32mINFO[39m: [36mServer listening at http://192.168.1.7:4000[39m
+[23:39:30] [32mINFO[39m: [36mincoming request[39m
+    [35mreqId[39m: "req-1"
+    [35mreq[39m: {
+      "method": "POST",
+      "url": "/api/auth/login",
+      "host": "localhost:4000",
+      "remoteAddress": "127.0.0.1",
+      "remotePort": 63506
+    }
+[23:39:31] [32mINFO[39m: [36mrequest completed[39m
+    [35mreqId[39m: "req-1"
+    [35mres[39m: {
+      "statusCode": 401
+    }
+    [35mresponseTime[39m: 606.3850000202656

@@ -29,6 +29,8 @@ COPY --from=builder /app/packages/utils/dist/ ./packages/utils/dist/
 
 RUN pnpm install --frozen-lockfile --prod
 
+COPY --from=builder /app/node_modules/.prisma/ ./node_modules/.prisma/
+
 USER node
 EXPOSE 4000
 CMD ["node", "apps/api/dist/index.js"]
