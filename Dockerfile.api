@@ -28,8 +28,7 @@ COPY --from=builder /app/packages/admin-api/dist/ ./packages/admin-api/dist/
 COPY --from=builder /app/packages/utils/dist/ ./packages/utils/dist/
 
 RUN pnpm install --frozen-lockfile --prod
-
-COPY --from=builder /app/node_modules/.prisma/ ./node_modules/.prisma/
+RUN cd packages/db && npx prisma generate
 
 # Ensure uploads directory exists
 RUN mkdir -p apps/api/uploads
