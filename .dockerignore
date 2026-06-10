@@ -4,6 +4,10 @@ node_modules
 *.md
 .env
 .env.local
+.env.*
+**/.env
+**/.env.local
+**/.env.*
 .next
 dist
 .turbo

@@ -10,7 +10,7 @@ RUN pnpm install --frozen-lockfile
 
 FROM base AS builder
 WORKDIR /app
-ARG NEXT_PUBLIC_API_URL=https://techiaapi-production.up.railway.app
+ARG NEXT_PUBLIC_API_URL
 ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
 COPY --from=deps /app .
 RUN pnpm --filter web build
@@ -34,4 +34,6 @@ RUN pnpm install --frozen-lockfile --prod
 USER nextjs
 WORKDIR /app/apps/web
 EXPOSE 3000
+HEALTHCHECK --interval=30s --timeout=3s --start-period=10s --retries=3 \
+  CMD wget -qO- http://localhost:3000/ || exit 1
 CMD ["node_modules/.bin/next", "start", "-p", "3000"]
