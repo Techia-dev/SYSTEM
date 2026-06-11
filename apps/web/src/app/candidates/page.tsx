@@ -19,6 +19,7 @@ import {
   useDeleteCandidate,
   useUploadCv,
 } from "@/lib/hooks";
+import { sdk } from "@/lib/sdk";
 import type { Candidate, CandidateLevel, CreateCandidateDto, UpdateCandidateDto } from "@techia/types";
 
 const LEVELS: { value: CandidateLevel | "all"; label: string }[] = [
@@ -33,11 +34,11 @@ const PAGE_SIZE = 20;
 
 const emptyCreate: CreateCandidateDto = { name: "", phone: "", email: "", level: "junior" };
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000";
-
 async function openCv(url: string) {
   const token = typeof window !== "undefined" ? localStorage.getItem("auth_token") : null;
-  const res = await fetch(`${API_URL}${url}`, {
+  const baseURL = process.env.NEXT_PUBLIC_API_URL ?? "";
+  const fullUrl = url.startsWith("http") ? url : `${baseURL}${url}`;
+  const res = await fetch(fullUrl, {
     headers: token ? { Authorization: `Bearer ${token}` } : {},
   });
   if (!res.ok) return;

@@ -28,7 +28,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       } catch {
         if (!cancelled) {
           clearAuthToken();
-          document.cookie = "auth_token=; path=/; max-age=0; SameSite=Lax";
+          const secure = typeof window !== "undefined" && window.location.protocol === "https:" ? "; Secure" : "";
+          document.cookie = `auth_token=; path=/; max-age=0; SameSite=Lax${secure}`;
           router.replace("/login");
         }
       } finally {

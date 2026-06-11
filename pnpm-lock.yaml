@@ -91,8 +91,6 @@ importers:
         specifier: ^8.60.1
         version: 8.60.1(eslint@9.39.4(jiti@2.7.0))(typescript@6.0.3)
 
-  apps/mobile: {}
-
   apps/web:
     dependencies:
       '@tanstack/react-query':

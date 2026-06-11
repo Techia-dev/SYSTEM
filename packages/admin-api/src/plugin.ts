@@ -13,7 +13,8 @@ export type Permission =
     | "applications:write"
     | "applications:status"
     | "commissions:read"
-    | "commissions:write";
+    | "commissions:write"
+    | "dashboard:read";
 
 type AuthGuard = (request: FastifyRequest, reply: FastifyReply) => Promise<void>;
 
@@ -59,6 +60,7 @@ const permissionsByRole: Record<string, readonly Permission[]> = {
         "applications:read",
         "applications:write",
         "commissions:read",
+        "dashboard:read",
     ],
 };
 
