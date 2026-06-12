@@ -145,7 +145,7 @@ Run the login against the API directly:
 ```bash
 curl -X POST https://techia-api.up.railway.app/api/auth/login \
   -H "Content-Type: application/json" \
-  -d '{"email":"admin@techia.com","password":"ChangeMe123!"}'
+  -d '{"email":"admin@techia.com","password":"ChangeMe123!"}'`
 ```
 
 Then in Railway Web service settings, set:
