@@ -4,7 +4,9 @@ WORKDIR /app
 
 # ---------------- deps ----------------
 FROM base AS deps
+
 COPY pnpm-lock.yaml pnpm-workspace.yaml package.json turbo.json ./
+
 COPY packages/types/package.json ./packages/types/
 COPY packages/utils/package.json ./packages/utils/
 COPY packages/sdk/package.json ./packages/sdk/
@@ -12,18 +14,18 @@ COPY apps/web/package.json ./apps/web/
 
 RUN pnpm install --frozen-lockfile
 
+
 # ---------------- build ----------------
 FROM base AS builder
-COPY --from=deps /app ./
 
-COPY packages/types/src ./packages/types/src
-COPY packages/utils/src ./packages/utils/src
-COPY packages/sdk/src ./packages/sdk/src
-COPY apps/web/src ./apps/web/src
-COPY apps/web/public ./apps/web/public
-COPY apps/web/next.config.ts ./apps/web/
-COPY apps/web/tsconfig.json ./apps/web/
-COPY apps/web/postcss.config.mjs ./apps/web/
+COPY --from=deps /app /app
+
+# source code
+COPY packages/types ./packages/types
+COPY packages/utils ./packages/utils
+COPY packages/sdk ./packages/sdk
+
+COPY apps/web ./apps/web
 
 ARG NEXT_PUBLIC_API_URL
 ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
@@ -31,24 +33,29 @@ ENV NODE_ENV=production
 
 RUN pnpm --filter web build
 
+
 # ---------------- runner ----------------
 FROM node:20-alpine AS runner
-RUN addgroup --system --gid 1001 nodejs
-RUN adduser --system --uid 1001 nextjs
 
 WORKDIR /app
+
+RUN addgroup --system --gid 1001 nodejs \
+ && adduser --system --uid 1001 nextjs
 
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
 
+# مهم جدًا: standalone output
 COPY --from=builder --chown=nextjs:nodejs /app/apps/web/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/apps/web/.next/static ./apps/web/.next/static
 COPY --from=builder --chown=nextjs:nodejs /app/apps/web/public ./apps/web/public
 
 USER nextjs
+
 EXPOSE 3000
 
-HEALTHCHECK --interval=30s --timeout=3s --start-period=10s --retries=3 \
-  CMD wget -qO- http://localhost:3000/ || exit 1
+HEALTHCHECK --interval=30s --timeout=3s --start-period=15s --retries=3 \
+  CMD wget -qO- http://localhost:3000 || exit 1
 
+# ✅ مهم: standalone entrypoint الصحيح
 CMD ["node", "apps/web/server.js"]
