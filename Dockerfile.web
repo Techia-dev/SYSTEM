@@ -4,7 +4,6 @@ WORKDIR /app
 
 # ---------------- deps ----------------
 FROM base AS deps
-
 COPY pnpm-lock.yaml pnpm-workspace.yaml package.json turbo.json ./
 COPY packages/types/package.json ./packages/types/
 COPY packages/utils/package.json ./packages/utils/
@@ -15,24 +14,24 @@ RUN pnpm install --frozen-lockfile
 
 # ---------------- builder ----------------
 FROM base AS builder
-
 COPY --from=deps /app /app
 
-# tsconfigs
 COPY packages/tsconfig ./packages/tsconfig
 COPY packages/types/tsconfig.json ./packages/types/
 COPY packages/utils/tsconfig.json ./packages/utils/
 COPY packages/sdk/tsconfig.json ./packages/sdk/
 COPY apps/web/tsconfig.json ./apps/web/
 
-# source
 COPY packages/types/src ./packages/types/src
 COPY packages/utils/src ./packages/utils/src
 COPY packages/sdk/src ./packages/sdk/src
-COPY apps/web ./apps/web
+COPY apps/web/src ./apps/web/src
+COPY apps/web/public ./apps/web/public
+COPY apps/web/next.config.ts ./apps/web/
+COPY apps/web/postcss.config.mjs ./apps/web/
 
 ARG NEXT_PUBLIC_API_URL
-ENV NEXT_PUBLIC_API_URL=techiaapi-production.up.railway.app
+ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
 
@@ -40,15 +39,12 @@ RUN pnpm --filter web build
 
 # ---------------- runner ----------------
 FROM node:20-alpine AS runner
-
-WORKDIR /app
-
 RUN addgroup --system --gid 1001 nodejs \
  && adduser --system --uid 1001 nextjs
 
+WORKDIR /app
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
-ENV PORT=3000
 
 COPY --from=builder --chown=nextjs:nodejs /app/apps/web/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/apps/web/.next/static ./apps/web/.next/static
@@ -57,7 +53,7 @@ COPY --from=builder --chown=nextjs:nodejs /app/apps/web/public ./apps/web/public
 USER nextjs
 EXPOSE 3000
 
-# جديد — وقت أطول للـ startup
-HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=5 \
+HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=3 \
   CMD wget -qO- http://localhost:3000 || exit 1
-  
+
+CMD ["node", "apps/web/server.js"]
