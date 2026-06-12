@@ -81,5 +81,6 @@ RUN chown -R node:node /app
 USER node
 EXPOSE 4000
 
-# Run migrations before starting the server
-CMD ["sh", "-c", "cd packages/db && npx prisma migrate deploy && cd /app && exec node apps/api/dist/index.js"]
+# Start the server (migrations handled by Railway release command)
+# Retry migration once in case release was skipped
+CMD ["sh", "-c", "cd packages/db && (npx prisma migrate deploy 2>/dev/null || true) && cd /app && exec node apps/api/dist/index.js"]
