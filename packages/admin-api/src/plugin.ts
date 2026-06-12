@@ -1,7 +1,7 @@
 import fp from "fastify-plugin";
 import { FastifyInstance, FastifyRequest, FastifyReply } from "fastify";
 import type { PrismaClient } from "@prisma/client";
-import "@fastify/jwt";
+import fastifyJwt from "@fastify/jwt";
 
 export type Permission =
     | "*"
@@ -75,7 +75,7 @@ async function authPlugin(
 ) {
     const accessTokenTtl = opts.accessTokenTtl ?? "15m";
 
-    await fastify.register(import("@fastify/jwt"), {
+    await fastify.register(fastifyJwt, {
         secret: opts.secret,
         sign: {
             expiresIn: accessTokenTtl,

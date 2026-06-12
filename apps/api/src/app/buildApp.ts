@@ -136,6 +136,26 @@ export const buildApp = () => {
         timestamp: new Date().toISOString(),
     }));
 
+    app.get("/health/ready", async (request, reply) => {
+        try {
+            const prisma = request.server.prisma;
+            await prisma.$queryRaw`SELECT 1`;
+            return {
+                status: "ok",
+                database: "connected",
+                env: config.nodeEnv,
+                timestamp: new Date().toISOString(),
+            };
+        } catch {
+            return reply.status(503).send({
+                status: "error",
+                database: "disconnected",
+                env: config.nodeEnv,
+                timestamp: new Date().toISOString(),
+            });
+        }
+    });
+
     app.get("/", async () => ({
         message: "ATS API Running",
     }));

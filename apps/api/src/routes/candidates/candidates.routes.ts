@@ -1,5 +1,6 @@
 import { FastifyPluginAsync } from "fastify";
-import { createWriteStream, existsSync, mkdirSync, readFileSync } from "fs";
+import { createWriteStream, existsSync, mkdirSync } from "fs";
+import { readFile } from "fs/promises";
 import { join, extname } from "path";
 import { pipeline } from "stream/promises";
 import { randomUUID } from "crypto";
@@ -98,6 +99,7 @@ const routes: FastifyPluginAsync = async (fastify) => {
     // ── CV Download ────────────────────────────────────────
     fastify.get<{ Params: { id: string; filename: string } }>(
         "/:id/cv/download/:filename",
+        { preHandler: [fastify.requireAuth] },
         async (request, reply) => {
             const { filename } = request.params;
             const filepath = join(UPLOADS_DIR, filename);
@@ -106,7 +108,7 @@ const routes: FastifyPluginAsync = async (fastify) => {
                 throw new NotFoundError("CV file", filename);
             }
 
-            const buffer = readFileSync(filepath);
+            const buffer = await readFile(filepath);
             return reply.type("application/pdf").send(buffer);
         }
     );

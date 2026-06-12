@@ -26,7 +26,8 @@
     ]
   },
   "workspaces": [
-    "apps/*",
-    "packages/*"
+    "packages/*",
+    "apps/api",
+    "apps/web"
   ]
 }
