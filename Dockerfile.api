@@ -33,6 +33,7 @@ RUN cd packages/db && npx prisma generate
 # Ensure uploads directory exists
 RUN mkdir -p apps/api/uploads
 
+RUN chown -R node:node /app
 USER node
 EXPOSE 4000
 # Run migrations then start server
