@@ -34,16 +34,13 @@ const PAGE_SIZE = 20;
 
 const emptyCreate: CreateCandidateDto = { name: "", phone: "", email: "", level: "junior" };
 
-async function openCv(url: string) {
+function openCv(url: string) {
   const token = typeof window !== "undefined" ? localStorage.getItem("auth_token") : null;
   const baseURL = process.env.NEXT_PUBLIC_API_URL ?? "";
   const fullUrl = url.startsWith("http") ? url : `${baseURL}${url}`;
-  const res = await fetch(fullUrl, {
-    headers: token ? { Authorization: `Bearer ${token}` } : {},
-  });
-  if (!res.ok) return;
-  const blob = await res.blob();
-  window.open(URL.createObjectURL(blob), "_blank");
+  const authUrl = new URL(fullUrl);
+  if (token) authUrl.searchParams.set("token", token);
+  window.open(authUrl.toString(), "_blank");
 }
 
 export default function CandidatesPage() {
