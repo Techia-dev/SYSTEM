@@ -17,6 +17,9 @@ COPY packages/admin-api/package.json ./packages/admin-api/
 COPY packages/sdk/package.json ./packages/sdk/
 COPY apps/api/package.json ./apps/api/
 
+# Prisma schema needed for postinstall prisma generate
+COPY packages/db/prisma ./packages/db/prisma
+
 RUN pnpm install --frozen-lockfile
 
 # ---------------- build ----------------
