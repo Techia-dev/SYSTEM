@@ -1,40 +1,56 @@
 FROM node:20-alpine AS base
 RUN npm i -g pnpm
-
-FROM base AS deps
 WORKDIR /app
+
+# ---------------- deps ----------------
+FROM base AS deps
 COPY pnpm-lock.yaml pnpm-workspace.yaml package.json turbo.json ./
-COPY packages/ ./packages/
-COPY apps/api/ ./apps/api/
+COPY packages ./packages
+COPY apps ./apps
 RUN pnpm install --frozen-lockfile
 
+# ---------------- build ----------------
 FROM base AS builder
 WORKDIR /app
-COPY --from=deps /app .
+COPY --from=deps /app ./
+
+# generate prisma once in build stage
 RUN pnpm --filter @techia/db run db:generate
+
+# build all apps/packages
 RUN pnpm build
 
-FROM base AS runner
+# ---------------- runner ----------------
+FROM node:20-alpine AS runner
 WORKDIR /app
 ENV NODE_ENV=production
 
-COPY --from=deps /app/pnpm-lock.yaml /app/pnpm-workspace.yaml /app/package.json /app/turbo.json ./
-COPY --from=deps /app/packages/ ./packages/
-COPY --from=builder /app/apps/api/dist/ ./apps/api/dist/
-COPY --from=builder /app/packages/types/dist/ ./packages/types/dist/
-COPY --from=builder /app/packages/db/dist/ ./packages/db/dist/
-COPY --from=builder /app/packages/db/prisma/ ./packages/db/prisma/
-COPY --from=builder /app/packages/admin-api/dist/ ./packages/admin-api/dist/
-COPY --from=builder /app/packages/utils/dist/ ./packages/utils/dist/
+RUN npm i -g pnpm
 
-RUN pnpm install --frozen-lockfile --prod
-RUN cd packages/db && npx prisma generate
+# فقط ما يحتاج runtime
+COPY --from=builder /app/apps/api/dist ./apps/api/dist
+COPY --from=builder /app/packages/db/dist ./packages/db/dist
+COPY --from=builder /app/packages/db/prisma ./packages/db/prisma
+COPY --from=builder /app/packages/types/dist ./packages/types/dist
+COPY --from=builder /app/packages/utils/dist ./packages/utils/dist
+COPY --from=builder /app/package.json ./package.json
+COPY --from=builder /app/pnpm-lock.yaml ./pnpm-lock.yaml
+COPY --from=builder /app/pnpm-workspace.yaml ./pnpm-workspace.yaml
 
-# Ensure uploads directory exists
+# install only production deps
+RUN pnpm install --prod --frozen-lockfile
+
+# prisma generate using local binary (no npx)
+RUN pnpm --filter @techia/db run db:generate
+
+# uploads
 RUN mkdir -p apps/api/uploads
 
+RUN addgroup -S node && adduser -S node -G node
 RUN chown -R node:node /app
 USER node
+
 EXPOSE 4000
-# Run migrations then start server
-CMD ["sh", "-c", "cd packages/db && npx prisma migrate deploy && cd /app && exec node apps/api/dist/index.js"]
+
+# safer startup (no migration in loop-critical path)
+CMD ["node", "apps/api/dist/index.js"]
