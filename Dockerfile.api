@@ -17,8 +17,15 @@ COPY packages/admin-api/package.json ./packages/admin-api/
 COPY packages/sdk/package.json ./packages/sdk/
 COPY apps/api/package.json ./apps/api/
 
-# Prisma schema needed for postinstall prisma generate
+# Prisma schema + tsconfig files (config rarely changes, safe for layer cache)
 COPY packages/db/prisma ./packages/db/prisma
+COPY packages/tsconfig ./packages/tsconfig
+COPY packages/db/tsconfig.json ./packages/db/
+COPY packages/types/tsconfig.json ./packages/types/
+COPY packages/utils/tsconfig.json ./packages/utils/
+COPY packages/admin-api/tsconfig.json ./packages/admin-api/
+COPY packages/sdk/tsconfig.json ./packages/sdk/
+COPY apps/api/tsconfig.json ./apps/api/
 
 RUN pnpm install --frozen-lockfile
 
@@ -28,7 +35,6 @@ COPY --from=deps /app ./
 
 COPY packages/types/src ./packages/types/src
 COPY packages/utils/src ./packages/utils/src
-COPY packages/db/prisma ./packages/db/prisma
 COPY packages/db/src ./packages/db/src
 COPY packages/admin-api/src ./packages/admin-api/src
 COPY packages/sdk/src ./packages/sdk/src
