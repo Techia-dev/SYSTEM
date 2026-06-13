@@ -141,6 +141,34 @@ export const buildApp = () => {
     });
 
     // ============================================================
+    // SETUP (one-time admin creation — no auth required)
+    // ============================================================
+
+    app.post<{
+        Body: { email: string; password: string; name?: string };
+    }>("/api/setup", async (request, reply) => {
+        const { email, password, name } = request.body;
+
+        if (!email || !password || password.length < 6) {
+            return reply.status(400).send({ success: false, error: "Email and password (min 6 chars) required" });
+        }
+
+        const existing = await request.server.prisma.user.findUnique({ where: { email } });
+        if (existing) {
+            return reply.status(409).send({ success: false, error: "User already exists" });
+        }
+
+        const bcrypt = await import("bcryptjs");
+        const hash = await bcrypt.hash(password, 12);
+
+        const user = await request.server.prisma.user.create({
+            data: { email, password: hash, name: name ?? "Admin", role: "admin" },
+        });
+
+        return reply.status(201).send({ success: true, message: "Admin user created", userId: user.id });
+    });
+
+    // ============================================================
     // WORKERS
     // ============================================================
 
