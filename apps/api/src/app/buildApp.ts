@@ -28,12 +28,8 @@ const allowedOrigins = config.corsOrigins.length > 0
     ? config.corsOrigins
     : ["http://localhost:3000"];
 
-const corsOriginHandler = (origin: string | undefined, cb: (err: Error | null, allow?: boolean) => void) => {
-    if (!origin || allowedOrigins.includes(origin) || origin.endsWith(".vercel.app") || origin.startsWith("http://localhost")) {
-        cb(null, true);
-    } else {
-        cb(null, false);
-    }
+const corsOriginHandler = (origin: string | undefined): boolean | string => {
+    return !origin || allowedOrigins.includes(origin) || origin.endsWith(".vercel.app") || origin.startsWith("http://localhost");
 };
 
 export const buildApp = () => {
