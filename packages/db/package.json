@@ -13,6 +13,7 @@
   },
   "scripts": {
     "postinstall": "prisma generate",
+    "db:generate": "prisma generate",
     "build": "tsc",
     "typecheck": "tsc --noEmit",
      "db:migrate": "prisma migrate dev",
