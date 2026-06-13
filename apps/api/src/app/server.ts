@@ -9,6 +9,8 @@ export const startServer = async () => {
         host: config.host,
     });
 
+    console.log(`Server listening on ${config.host}:${config.port}`);
+
     const shutdown = async (signal: string) => {
         app.log.info(`Received ${signal}, shutting down...`);
         const timeout = setTimeout(() => {

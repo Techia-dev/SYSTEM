@@ -10,6 +10,8 @@ process.on("uncaughtException", (error) => {
     process.exit(1);
 });
 
+console.log("Starting server...");
+
 startServer().catch((err: unknown) => {
     console.error("Failed to start server:", err);
     process.exit(1);
