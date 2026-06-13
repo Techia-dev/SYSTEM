@@ -26,7 +26,6 @@ COPY packages/types/src ./packages/types/src
 COPY packages/utils/src ./packages/utils/src
 COPY packages/sdk/src ./packages/sdk/src
 COPY apps/web/src ./apps/web/src
-COPY apps/web/public ./apps/web/public
 COPY apps/web/next.config.ts ./apps/web/
 COPY apps/web/postcss.config.mjs ./apps/web/
 
@@ -48,8 +47,6 @@ ENV NEXT_TELEMETRY_DISABLED=1
 
 COPY --from=builder --chown=nextjs:nodejs /app/apps/web/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/apps/web/.next/static ./apps/web/.next/static
-COPY --from=builder --chown=nextjs:nodejs /app/apps/web/public ./apps/web/public
-
 USER nextjs
 EXPOSE 3000
 
