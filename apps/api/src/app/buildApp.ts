@@ -29,7 +29,7 @@ const allowedOrigins = config.corsOrigins.length > 0
     : ["http://localhost:3000"];
 
 const corsOriginHandler = (origin: string | undefined): boolean | string => {
-    return !origin || allowedOrigins.includes(origin) || origin.endsWith(".vercel.app") || origin.startsWith("http://localhost");
+    return !origin || allowedOrigins.includes(origin) || origin.endsWith(".vercel.app") || origin.endsWith(".railway.app") || origin.startsWith("http://localhost");
 };
 
 export const buildApp = () => {
@@ -66,72 +66,19 @@ export const buildApp = () => {
     });
 
     // ============================================================
-    // SECURITY HEADERS
+    // SECURITY HEADERS (applies to all routes)
     // ============================================================
 
     app.register(helmet);
 
     // ============================================================
-    // CORS
-    // ============================================================
-
-    app.register(cors, {
-        origin: corsOriginHandler,
-        credentials: true,
-        methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
-    });
-
-    // ============================================================
-    // MULTIPART (for file uploads)
-    // ============================================================
-
-    app.register(multipart, {
-        limits: {
-            fileSize: 10 * 1024 * 1024, // 10 MB max
-            files: 1,
-        },
-    });
-
-    // ============================================================
-    // RATE LIMIT (before auth & routes)
-    // ============================================================
-
-    app.register(rateLimit, {
-        global: true,
-        max: 100,
-        timeWindow: "1 minute",
-    });
-
-    // ============================================================
-    // PLUGINS (order matters: prisma → auth → routes)
+    // PRISMA (shared by healthcheck + API routes)
     // ============================================================
 
     app.register(prismaPlugin);
 
-    app.register(authPlugin, {
-        secret: config.jwtSecret,
-        accessTokenTtl: config.jwtAccessTokenTtl,
-    });
-
     // ============================================================
-    // WORKERS
-    // ============================================================
-
-    registerWorkers();
-
-    // ============================================================
-    // ROUTES
-    // ============================================================
-
-    app.register(authRoutes, { prefix: "/api/auth" });
-    app.register(candidateRoutes, { prefix: "/api/candidates" });
-    app.register(applicationRoutes, { prefix: "/api/applications" });
-    app.register(offerRoutes, { prefix: "/api/offers" });
-    app.register(commissionRoutes, { prefix: "/api/commissions" });
-    app.register(dashboardRoutes, { prefix: "/api/dashboard" });
-
-    // ============================================================
-    // CORE ENDPOINTS
+    // HEALTHCHECK (before CORS so Railway can reach it)
     // ============================================================
 
     app.get("/health", async () => ({
@@ -160,9 +107,53 @@ export const buildApp = () => {
         }
     });
 
-    app.get("/", async () => ({
-        message: "ATS API Running",
-    }));
+    // ============================================================
+    // WORKERS
+    // ============================================================
+
+    registerWorkers();
+
+    // ============================================================
+    // API (CORS, rate-limit, auth, routes)
+    // ============================================================
+
+    app.register(async (apiApp) => {
+
+        apiApp.register(cors, {
+            origin: corsOriginHandler,
+            credentials: true,
+            methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+        });
+
+        apiApp.register(multipart, {
+            limits: {
+                fileSize: 10 * 1024 * 1024,
+                files: 1,
+            },
+        });
+
+        apiApp.register(rateLimit, {
+            global: true,
+            max: 100,
+            timeWindow: "1 minute",
+        });
+
+        apiApp.register(authPlugin, {
+            secret: config.jwtSecret,
+            accessTokenTtl: config.jwtAccessTokenTtl,
+        });
+
+        apiApp.register(authRoutes, { prefix: "/api/auth" });
+        apiApp.register(candidateRoutes, { prefix: "/api/candidates" });
+        apiApp.register(applicationRoutes, { prefix: "/api/applications" });
+        apiApp.register(offerRoutes, { prefix: "/api/offers" });
+        apiApp.register(commissionRoutes, { prefix: "/api/commissions" });
+        apiApp.register(dashboardRoutes, { prefix: "/api/dashboard" });
+
+        apiApp.get("/", async () => ({
+            message: "ATS API Running",
+        }));
+    });
 
     return app;
 };
