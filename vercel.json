@@ -1,0 +1,5 @@
+{
+  "rootDirectory": "apps/web",
+  "buildCommand": "cd ../.. && npx turbo build --filter=web",
+  "installCommand": "cd ../.. && pnpm install"
+}
