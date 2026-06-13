@@ -86,7 +86,10 @@ export const buildApp = () => {
     // SECURITY HEADERS
     // ============================================================
 
-    app.register(helmet);
+    app.register(helmet, {
+        crossOriginResourcePolicy: { policy: "cross-origin" },
+        crossOriginOpenerPolicy: { policy: "unsafe-none" },
+    });
 
     // ============================================================
     // PRISMA (shared by healthcheck + API routes)
@@ -102,7 +105,6 @@ export const buildApp = () => {
         origin: corsOriginHandler,
         credentials: true,
         methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
-        allowedHeaders: ["Content-Type", "Authorization"],
         exposedHeaders: ["Authorization"],
         preflightContinue: false,
         optionsSuccessStatus: 204,
