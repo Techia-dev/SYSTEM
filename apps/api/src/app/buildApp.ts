@@ -28,8 +28,17 @@ const allowedOrigins = config.corsOrigins.length > 0
     ? config.corsOrigins
     : ["http://localhost:3000"];
 
-const corsOriginHandler = (origin: string | undefined): boolean | string => {
-    return !origin || allowedOrigins.includes(origin) || origin.endsWith(".vercel.app") || origin.endsWith(".railway.app") || origin.startsWith("http://localhost");
+const corsOriginHandler = (
+    origin: string | undefined,
+    cb: (err: Error | null, allow: boolean) => void
+): void => {
+    if (!origin) return cb(null, true);
+    if (allowedOrigins.includes(origin)) return cb(null, true);
+    if (origin.endsWith(".vercel.app")) return cb(null, true);
+    if (origin.endsWith(".railway.app")) return cb(null, true);
+    if (origin.startsWith("http://localhost")) return cb(null, true);
+
+    cb(new Error(`CORS: origin ${origin} not allowed`), false);
 };
 
 export const buildApp = () => {
@@ -66,7 +75,7 @@ export const buildApp = () => {
     });
 
     // ============================================================
-    // SECURITY HEADERS (applies to all routes)
+    // SECURITY HEADERS
     // ============================================================
 
     app.register(helmet);
@@ -78,7 +87,7 @@ export const buildApp = () => {
     app.register(prismaPlugin);
 
     // ============================================================
-    // HEALTHCHECK (before CORS so Railway can reach it)
+    // HEALTHCHECK (before CORS so Railway can reach it freely)
     // ============================================================
 
     app.get("/health", async () => ({
@@ -114,7 +123,7 @@ export const buildApp = () => {
     registerWorkers();
 
     // ============================================================
-    // API (CORS, rate-limit, auth, routes)
+    // API (CORS → rate-limit → auth → routes)
     // ============================================================
 
     app.register(async (apiApp) => {
@@ -123,11 +132,15 @@ export const buildApp = () => {
             origin: corsOriginHandler,
             credentials: true,
             methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+            allowedHeaders: ["Content-Type", "Authorization"],
+            exposedHeaders: ["Authorization"],
+            preflightContinue: false,
+            optionsSuccessStatus: 204,
         });
 
         apiApp.register(multipart, {
             limits: {
-                fileSize: 10 * 1024 * 1024,
+                fileSize: 10 * 1024 * 1024, // 10 MB
                 files: 1,
             },
         });
@@ -143,6 +156,7 @@ export const buildApp = () => {
             accessTokenTtl: config.jwtAccessTokenTtl,
         });
 
+        // ── Routes ────────────────────────────────────────────
         apiApp.register(authRoutes, { prefix: "/api/auth" });
         apiApp.register(candidateRoutes, { prefix: "/api/candidates" });
         apiApp.register(applicationRoutes, { prefix: "/api/applications" });
