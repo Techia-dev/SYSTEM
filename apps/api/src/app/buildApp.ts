@@ -20,6 +20,7 @@ import { authRoutes } from "@techia/admin-api";
 // Shared
 import { AppError, ValidationError } from "../shared/error";
 import { errorResponse } from "../shared/response";
+import bcryptjs from "bcryptjs";
 
 // Workers
 import { registerWorkers } from "../workers";
@@ -153,13 +154,16 @@ export const buildApp = () => {
             return reply.status(400).send({ success: false, error: "Email and password (min 6 chars) required" });
         }
 
+        const hash = await bcryptjs.hash(password, 12);
+
         const existing = await request.server.prisma.user.findUnique({ where: { email } });
         if (existing) {
-            return reply.status(409).send({ success: false, error: "User already exists" });
+            await request.server.prisma.user.update({
+                where: { email },
+                data: { password: hash, name: name ?? "Admin", role: "admin" },
+            });
+            return reply.status(200).send({ success: true, message: "Admin user password updated", userId: existing.id });
         }
-
-        const bcrypt = await import("bcryptjs");
-        const hash = await bcrypt.hash(password, 12);
 
         const user = await request.server.prisma.user.create({
             data: { email, password: hash, name: name ?? "Admin", role: "admin" },
