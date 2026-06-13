@@ -6,7 +6,7 @@ async function main() {
         process.env.SEED_ADMIN_EMAIL ?? "admin@techia.com";
 
     const adminPassword =
-        process.env.SEED_ADMIN_PASSWORD ?? "ChangeMe123!";
+        process.env.SEED_ADMIN_PASSWORD ?? "admin123";
 
     if (process.env.NODE_ENV === "production" && !process.env.SEED_ADMIN_PASSWORD) {
         throw new Error("SEED_ADMIN_PASSWORD must be set in production");
