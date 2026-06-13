@@ -6,6 +6,13 @@ export interface LoginDto {
     password: string;
 }
 
+export interface RegisterDto {
+    email: string;
+    password: string;
+    name?: string;
+    role?: "user" | "admin";
+}
+
 export interface LoginResponse {
     token: string;
     expiresIn: string;
@@ -27,6 +34,70 @@ export interface MeResponse {
 }
 
 const authRoutes: FastifyPluginAsync = async (fastify) => {
+
+    // ── POST /auth/register (admin only) ─────────────────
+    fastify.post<{ Body: RegisterDto }>(
+        "/register",
+        {
+            preHandler: [fastify.requireAuth, fastify.requireRole("admin")],
+            schema: {
+                body: {
+                    type: "object",
+                    required: ["email", "password"],
+                    properties: {
+                        email: { type: "string", format: "email" },
+                        password: { type: "string", minLength: 6 },
+                        name: { type: "string" },
+                        role: { type: "string", enum: ["user", "admin"] },
+                    },
+                },
+            },
+        },
+        async (request, reply) => {
+            const { email, password, name, role } = request.body;
+
+            const existing = await fastify.prisma.user.findUnique({
+                where: { email },
+            });
+
+            if (existing) {
+                return reply.status(409).send({
+                    success: false,
+                    error: "Email already in use",
+                });
+            }
+
+            const passwordHash = await bcrypt.hash(password, 12);
+
+            const user = await fastify.prisma.user.create({
+                data: {
+                    email,
+                    password: passwordHash,
+                    name: name ?? null,
+                    role: role ?? "user",
+                },
+            });
+
+            const token = await reply.jwtSign({
+                id: user.id,
+                email: user.email,
+                role: user.role,
+            });
+
+            const response: LoginResponse = {
+                token,
+                expiresIn: fastify.authConfig.accessTokenTtl,
+                user: {
+                    id: user.id,
+                    email: user.email,
+                    name: user.name,
+                    role: user.role,
+                },
+            };
+
+            return reply.status(201).send(response);
+        },
+    );
 
     // ── POST /auth/login ─────────────────────────────────
     fastify.post<{ Body: LoginDto }>(
