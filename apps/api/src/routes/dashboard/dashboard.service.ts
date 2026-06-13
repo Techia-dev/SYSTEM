@@ -24,29 +24,55 @@ export class DashboardService {
     }
 
     async getAnalytics(): Promise<MonthlyAnalytics[]> {
-        const applications = await prisma.application.findMany({
-            select: { status: true, createdAt: true },
-        });
-        const commissions = await prisma.commission.findMany({
-            select: { status: true, amount: true, earnedAt: true },
-        });
+        const [acceptedByMonth, rejectedByMonth, paidByMonth, pendingByMonth] = await Promise.all([
+            prisma.application.groupBy({
+                by: ["createdAt"],
+                where: { status: "accepted" },
+                _count: { id: true },
+            }) as unknown as Array<{ createdAt: Date; _count: { id: number } }>,
+            prisma.application.groupBy({
+                by: ["createdAt"],
+                where: { status: "rejected" },
+                _count: { id: true },
+            }) as unknown as Array<{ createdAt: Date; _count: { id: number } }>,
+            prisma.commission.groupBy({
+                by: ["earnedAt"],
+                where: { status: "paid" },
+                _sum: { amount: true },
+            }) as unknown as Array<{ earnedAt: Date; _sum: { amount: number | null } }>,
+            prisma.commission.groupBy({
+                by: ["earnedAt"],
+                where: { status: "pending" },
+                _sum: { amount: true },
+            }) as unknown as Array<{ earnedAt: Date; _sum: { amount: number | null } }>,
+        ]);
 
         const monthMap = new Map<string, MonthlyAnalytics>();
 
-        for (const app of applications) {
-            const month = app.createdAt.toISOString().slice(0, 7);
-            const entry = monthMap.get(month) ?? { month, accepted: 0, rejected: 0, paidCommissions: 0, pendingCommissions: 0 };
-            if (app.status === "accepted") entry.accepted++;
-            else if (app.status === "rejected") entry.rejected++;
-            monthMap.set(month, entry);
+        function getMonth(date: Date): string {
+            return date.toISOString().slice(0, 7);
         }
 
-        for (const c of commissions) {
-            const month = c.earnedAt.toISOString().slice(0, 7);
-            const entry = monthMap.get(month) ?? { month, accepted: 0, rejected: 0, paidCommissions: 0, pendingCommissions: 0 };
-            if (c.status === "paid") entry.paidCommissions += c.amount;
-            else if (c.status === "pending") entry.pendingCommissions += c.amount;
-            monthMap.set(month, entry);
+        function ensureEntry(month: string): MonthlyAnalytics {
+            let entry = monthMap.get(month);
+            if (!entry) {
+                entry = { month, accepted: 0, rejected: 0, paidCommissions: 0, pendingCommissions: 0 };
+                monthMap.set(month, entry);
+            }
+            return entry;
+        }
+
+        for (const item of acceptedByMonth) {
+            ensureEntry(getMonth(item.createdAt)).accepted += item._count.id;
+        }
+        for (const item of rejectedByMonth) {
+            ensureEntry(getMonth(item.createdAt)).rejected += item._count.id;
+        }
+        for (const item of paidByMonth) {
+            ensureEntry(getMonth(item.earnedAt)).paidCommissions += item._sum.amount ?? 0;
+        }
+        for (const item of pendingByMonth) {
+            ensureEntry(getMonth(item.earnedAt)).pendingCommissions += item._sum.amount ?? 0;
         }
 
         return Array.from(monthMap.values()).sort((a, b) => a.month.localeCompare(b.month));

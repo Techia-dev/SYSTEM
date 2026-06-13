@@ -4,6 +4,7 @@ import type {
     UpdateCommissionResponse,
     PaginatedResponse,
 } from "@techia/types";
+import type { Prisma, CommissionStatus } from "@prisma/client";
 import { NotFoundError } from "../../shared/error";
 
 export class CommissionsService {
@@ -16,9 +17,9 @@ export class CommissionsService {
     }): Promise<PaginatedResponse<unknown>> {
         const skip = (params.page - 1) * params.pageSize;
 
-        const where: Record<string, unknown> = {};
+        const where: Prisma.CommissionWhereInput = {};
         if (params.status) {
-            where.status = params.status;
+            where.status = params.status as CommissionStatus;
         }
 
         const [commissions, total] = await Promise.all([

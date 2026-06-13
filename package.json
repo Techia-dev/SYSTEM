@@ -8,7 +8,9 @@
     "typecheck": "turbo run typecheck",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "clean": "turbo run clean"
+    "clean": "turbo run clean",
+    "test": "turbo run test",
+    "validate:env": "pnpm --filter @techia/api run validate:env"
   },
   "devDependencies": {
     "@types/node": "^25.9.1",

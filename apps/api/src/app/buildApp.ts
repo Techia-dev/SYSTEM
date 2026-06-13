@@ -34,9 +34,17 @@ const corsOriginHandler = (
 ): void => {
     if (!origin) return cb(null, true);
     if (allowedOrigins.includes(origin)) return cb(null, true);
-    if (origin.endsWith(".vercel.app")) return cb(null, true);
-    if (origin.endsWith(".railway.app")) return cb(null, true);
-    if (origin.startsWith("http://localhost")) return cb(null, true);
+
+    try {
+        const url = new URL(origin);
+        const hostname = url.hostname;
+
+        if (hostname.endsWith(".vercel.app")) return cb(null, true);
+        if (hostname.endsWith(".railway.app")) return cb(null, true);
+        if (hostname === "localhost" || hostname.startsWith("localhost.")) return cb(null, true);
+    } catch {
+        // Invalid URL origin - deny
+    }
 
     cb(new Error(`CORS: origin ${origin} not allowed`), false);
 };
@@ -87,7 +95,21 @@ export const buildApp = () => {
     app.register(prismaPlugin);
 
     // ============================================================
-    // HEALTHCHECK (before CORS so Railway can reach it freely)
+    // CORS (at root level so healthcheck + API both get it)
+    // ============================================================
+
+    app.register(cors, {
+        origin: corsOriginHandler,
+        credentials: true,
+        methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+        allowedHeaders: ["Content-Type", "Authorization"],
+        exposedHeaders: ["Authorization"],
+        preflightContinue: false,
+        optionsSuccessStatus: 204,
+    });
+
+    // ============================================================
+    // HEALTHCHECK
     // ============================================================
 
     app.get("/health", async () => ({
@@ -123,20 +145,10 @@ export const buildApp = () => {
     registerWorkers();
 
     // ============================================================
-    // API (CORS → rate-limit → auth → routes)
+    // API (rate-limit → auth → routes)
     // ============================================================
 
     app.register(async (apiApp) => {
-
-        apiApp.register(cors, {
-            origin: corsOriginHandler,
-            credentials: true,
-            methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
-            allowedHeaders: ["Content-Type", "Authorization"],
-            exposedHeaders: ["Authorization"],
-            preflightContinue: false,
-            optionsSuccessStatus: 204,
-        });
 
         apiApp.register(multipart, {
             limits: {

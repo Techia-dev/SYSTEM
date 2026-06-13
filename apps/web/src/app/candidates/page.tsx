@@ -19,7 +19,6 @@ import {
   useDeleteCandidate,
   useUploadCv,
 } from "@/lib/hooks";
-import { sdk } from "@/lib/sdk";
 import type { Candidate, CandidateLevel, CreateCandidateDto, UpdateCandidateDto } from "@techia/types";
 
 const LEVELS: { value: CandidateLevel | "all"; label: string }[] = [
@@ -35,12 +34,9 @@ const PAGE_SIZE = 20;
 const emptyCreate: CreateCandidateDto = { name: "", phone: "", email: "", level: "junior" };
 
 function openCv(url: string) {
-  const token = typeof window !== "undefined" ? localStorage.getItem("auth_token") : null;
   const baseURL = process.env.NEXT_PUBLIC_API_URL ?? "";
   const fullUrl = url.startsWith("http") ? url : `${baseURL}${url}`;
-  const authUrl = new URL(fullUrl);
-  if (token) authUrl.searchParams.set("token", token);
-  window.open(authUrl.toString(), "_blank");
+  window.open(fullUrl, "_blank");
 }
 
 export default function CandidatesPage() {
@@ -51,8 +47,8 @@ export default function CandidatesPage() {
   const deleteMutation = useDeleteCandidate();
   const uploadCvMutation = useUploadCv();
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [uploadingCv, setUploadingCv] = useState(false);
 
-  const candidates = data?.data ?? [];
   const total = data?.total ?? 0;
 
   const [levelFilter, setLevelFilter] = useState<CandidateLevel | "all">("all");
@@ -69,8 +65,9 @@ export default function CandidatesPage() {
   const [deleteTarget, setDeleteTarget] = useState<Candidate | null>(null);
 
   const filtered = useMemo(() => {
+    const items = data?.data ?? [];
     const term = search.trim().toLowerCase();
-    return candidates.filter((c) => {
+    return items.filter((c) => {
       const matchLevel = levelFilter === "all" || c.level === levelFilter;
       const matchSearch =
         term === "" ||
@@ -79,7 +76,7 @@ export default function CandidatesPage() {
         (c.email ?? "").toLowerCase().includes(term);
       return matchLevel && matchSearch;
     });
-  }, [candidates, levelFilter, search]);
+  }, [data, levelFilter, search]);
 
   // ── Add ──
   function openAdd() {
@@ -172,9 +169,12 @@ export default function CandidatesPage() {
 
     try {
       setEditFormError(null);
+      setUploadingCv(true);
       await uploadCvMutation.mutateAsync({ id: editTarget.id, file });
     } catch (err) {
       setEditFormError(getErrorMessage(err));
+    } finally {
+      setUploadingCv(false);
     }
 
     if (fileInputRef.current) fileInputRef.current.value = "";
@@ -346,7 +346,7 @@ export default function CandidatesPage() {
 
       {/* ── Edit Modal ── */}
       <Modal
-        open={!!editTarget && !fileInputRef.current?.value}
+        open={!!editTarget && !uploadingCv}
         onClose={() => setEditTarget(null)}
         title="Edit candidate"
         description={editTarget?.name ?? ""}

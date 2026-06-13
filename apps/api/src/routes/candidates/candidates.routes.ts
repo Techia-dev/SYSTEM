@@ -1,7 +1,7 @@
 import { FastifyPluginAsync } from "fastify";
 import { createWriteStream, existsSync, mkdirSync } from "fs";
 import { readFile } from "fs/promises";
-import { join, extname } from "path";
+import { join, extname, resolve } from "path";
 import { pipeline } from "stream/promises";
 import { randomUUID } from "crypto";
 import { CandidatesController } from "./candidates.controller";
@@ -15,7 +15,7 @@ import type {
     ListCandidatesQueryDto,
 } from "@techia/types";
 
-const UPLOADS_DIR = join(__dirname, "..", "..", "..", "uploads", "cvs");
+const UPLOADS_DIR = resolve(process.cwd(), "uploads", "cvs");
 
 function ensureUploadsDir() {
     if (!existsSync(UPLOADS_DIR)) {

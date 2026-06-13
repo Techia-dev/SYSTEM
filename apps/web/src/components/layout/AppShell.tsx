@@ -2,7 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
-import { isAuthenticated, clearAuthToken, authApi } from "@/lib/auth";
+import { isAuthenticated, clearAuthToken, authApi, getAuthToken } from "@/lib/auth";
+import { sdk } from "@/lib/sdk";
 import { Sidebar } from "./Sidebar";
 
 export function AppShell({ children }: { children: React.ReactNode }) {
@@ -17,6 +18,11 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     if (!isAuthenticated()) {
       router.replace("/login");
       return;
+    }
+
+    const token = getAuthToken();
+    if (token) {
+      sdk.setAuthToken(token);
     }
 
     let cancelled = false;
