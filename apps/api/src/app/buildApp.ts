@@ -24,9 +24,17 @@ import { errorResponse } from "../shared/response";
 // Workers
 import { registerWorkers } from "../workers";
 
-const corsOrigins = config.corsOrigins.length > 0
+const allowedOrigins = config.corsOrigins.length > 0
     ? config.corsOrigins
     : ["http://localhost:3000"];
+
+const corsOriginHandler = (origin: string | undefined, cb: (err: Error | null, allow?: boolean) => void) => {
+    if (!origin || allowedOrigins.includes(origin) || origin.endsWith(".vercel.app") || origin.startsWith("http://localhost")) {
+        cb(null, true);
+    } else {
+        cb(null, false);
+    }
+};
 
 export const buildApp = () => {
     const app = Fastify({
@@ -72,7 +80,7 @@ export const buildApp = () => {
     // ============================================================
 
     app.register(cors, {
-        origin: corsOrigins,
+        origin: corsOriginHandler,
         credentials: true,
         methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
     });
