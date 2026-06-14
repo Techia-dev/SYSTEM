@@ -3,6 +3,7 @@ class AppConstants {
   // استخدم --dart-define=API_URL=http://10.0.2.2:4000 للـ Android emulator
   // أو --dart-define=API_URL=http://192.168.1.x:4000 للـ device الحقيقي
   //http://techiaapi.railway.internal
+  /////
   static const String baseUrl = String.fromEnvironment('API_URL',
       defaultValue: 'https://techiaapi-production.up.railway.app');
   static const String apiCandidates = '/api/candidates';
