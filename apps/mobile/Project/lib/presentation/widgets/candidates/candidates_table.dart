@@ -1,286 +1,305 @@
-import 'package:flutter/material.dart' hide DateUtils;
-import 'package:provider/provider.dart';
-import '../../../core/theme/app_colors.dart';
-import '../../../core/theme/app_text_styles.dart';
-import '../../../core/utils/app_utils.dart';
-import '../../../data/models/candidate_model.dart';
-import '../../../providers/candidates_provider.dart';
-import '../common/common_widgets.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:techia_sdk/techia_sdk.dart';
+import 'package:techia_ats/core/theme/app_colors.dart';
+import 'package:techia_ats/core/theme/app_text_styles.dart';
+import 'package:techia_ats/blocs/candidates/candidates_bloc.dart';
 
 class CandidatesTable extends StatelessWidget {
   const CandidatesTable({super.key});
 
   @override
   Widget build(BuildContext context) {
+    return BlocBuilder<CandidatesBloc, CandidatesState>(
+      builder: (context, state) {
+        if (state.isLoading && state.items.isEmpty) {
+          return const Center(child: CircularProgressIndicator(color: AppColors.accentEmerald));
+        }
+        if (state.error != null && state.items.isEmpty) {
+          return _buildError(context, state.error!);
+        }
+        if (state.items.isEmpty) {
+          return _buildEmpty();
+        }
+
+        return Container(
+          decoration: BoxDecoration(
+            color: AppColors.bgCard,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: AppColors.border),
+          ),
+          child: Column(
+            children: [
+              _buildHeader(state),
+              _buildTable(context, state),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildHeader(CandidatesState state) {
     return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      decoration: const BoxDecoration(
+        border: Border(bottom: BorderSide(color: AppColors.border)),
+      ),
+      child: Row(
+        children: [
+          const SizedBox(width: 24),
+          Text('Candidate', style: AppTextStyles.tableHeader),
+          const SizedBox(width: 8),
+          Expanded(child: Text('Phone', style: AppTextStyles.tableHeader)),
+          Expanded(child: Text('Level', style: AppTextStyles.tableHeader)),
+          Expanded(child: Text('Qualification', style: AppTextStyles.tableHeader)),
+          Expanded(child: Text('Experience', style: AppTextStyles.tableHeader)),
+          Expanded(child: Text('CV', style: AppTextStyles.tableHeader)),
+          Expanded(child: Text('Joined', style: AppTextStyles.tableHeader)),
+          const SizedBox(width: 160),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTable(BuildContext context, CandidatesState state) {
+    return ListView.separated(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      itemCount: state.items.length,
+      separatorBuilder: (_, __) => const Divider(height: 1, color: AppColors.border),
+      itemBuilder: (context, index) {
+        final c = state.items[index];
+        final isSelected = state.selected?.id == c.id;
+        return Container(
+          color: isSelected ? AppColors.bgSecondary : null,
+          child: InkWell(
+            onTap: () => context.read<CandidatesBloc>().add(CandidatesSelect(c)),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+              child: Row(
+                children: [
+                  // Initials avatar
+                  Container(
+                    width: 36,
+                    height: 36,
+                    decoration: BoxDecoration(
+                      color: AppColors.accentEmerald.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    alignment: Alignment.center,
+                    child: Text(
+                      c.name.isNotEmpty ? c.name[0].toUpperCase() : '?',
+                      style: AppTextStyles.titleSmall.copyWith(
+                        color: AppColors.accentEmerald,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  // Name + email
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(c.name, style: AppTextStyles.titleSmall),
+                        Text(c.displayEmail, style: AppTextStyles.bodySmall),
+                      ],
+                    ),
+                  ),
+                  // Phone
+                  Expanded(
+                    child: Text(c.displayPhone, style: AppTextStyles.bodyMedium),
+                  ),
+                  // Level
+                  Expanded(
+                    child: Text(
+                      c.level.isEmpty ? '—' : c.level,
+                      style: AppTextStyles.bodyMedium.copyWith(color: AppColors.textPrimary),
+                    ),
+                  ),
+                  // Qualification (not in model, show dash)
+                  Expanded(
+                    child: Text('—', style: AppTextStyles.bodySmall),
+                  ),
+                  // Experience (not in model, show dash)
+                  Expanded(
+                    child: Text('—', style: AppTextStyles.bodySmall),
+                  ),
+                  // CV
+                  Expanded(
+                    child: Text('—', style: AppTextStyles.bodySmall),
+                  ),
+                  // Joined
+                  Expanded(
+                    child: Text(_formatDate(c.createdAt), style: AppTextStyles.bodySmall),
+                  ),
+                  // Actions
+                  SizedBox(
+                    width: 160,
+                    child: Row(
+                      children: [
+                        _ActionButton(label: 'Edit', onTap: () => _editCandidate(context, c)),
+                        const SizedBox(width: 4),
+                        _ActionButton(label: 'CV', onTap: () {}),
+                        const SizedBox(width: 4),
+                        _ActionButton(label: 'Delete', onTap: () => _deleteCandidate(context, c), destructive: true),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  void _editCandidate(BuildContext context, Candidate c) {
+    final nameCtrl = TextEditingController(text: c.name);
+    final phoneCtrl = TextEditingController(text: c.phone);
+    final emailCtrl = TextEditingController(text: c.email ?? '');
+    String level = c.level;
+
+    showDialog(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setState) => AlertDialog(
+          title: const Text('Edit candidate'),
+          content: SizedBox(
+            width: 360,
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  TextField(controller: nameCtrl, decoration: const InputDecoration(labelText: 'Name')),
+                  const SizedBox(height: 12),
+                  TextField(controller: phoneCtrl, decoration: const InputDecoration(labelText: 'Phone')),
+                  const SizedBox(height: 12),
+                  TextField(controller: emailCtrl, decoration: const InputDecoration(labelText: 'Email')),
+                  const SizedBox(height: 12),
+                  DropdownButtonFormField<String>(
+                    initialValue: level,
+                    decoration: const InputDecoration(labelText: 'Level'),
+                    items: ['Junior', 'Mid', 'Senior'].map((s) => DropdownMenuItem(value: s, child: Text(s))).toList(),
+                    onChanged: (v) => setState(() => level = v!),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
+            ElevatedButton(
+              onPressed: () {
+                context.read<CandidatesBloc>().add(CandidatesUpdate(c.id, {
+                  'name': nameCtrl.text,
+                  'phone': phoneCtrl.text,
+                  'email': emailCtrl.text,
+                  'level': level,
+                }));
+                Navigator.pop(ctx);
+              },
+              child: const Text('Save'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _deleteCandidate(BuildContext context, Candidate c) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Delete candidate'),
+        content: Text('Are you sure you want to delete ${c.name}?'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
+          ElevatedButton(
+            onPressed: () {
+              context.read<CandidatesBloc>().add(CandidatesDelete(c.id));
+              Navigator.pop(ctx);
+            },
+            style: ElevatedButton.styleFrom(backgroundColor: AppColors.statusRejected),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  String _formatDate(String dateStr) {
+    final dt = DateTime.tryParse(dateStr);
+    if (dt == null) return dateStr;
+    return '${_months[dt.month - 1]} ${dt.day}, ${dt.year}';
+  }
+
+  static const _months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+  Widget _buildError(BuildContext context, String error) {
+    return Container(
+      padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
         color: AppColors.bgCard,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: AppColors.border),
       ),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _buildHeader(context),
-          const Divider(height: 1),
-          _buildTable(context),
-          const Divider(height: 1),
-          _buildPagination(context),
+          IconButton(
+            icon: const Icon(Icons.refresh, color: AppColors.accentEmerald),
+            onPressed: () => context.read<CandidatesBloc>().add(CandidatesLoad()),
+          ),
+          const SizedBox(height: 12),
+          Text(error, style: AppTextStyles.bodySmall.copyWith(color: AppColors.statusRejected)),
         ],
       ),
     );
   }
 
-  Widget _buildHeader(BuildContext context) {
-    return Consumer<CandidatesProvider>(
-      builder: (context, provider, _) {
-        return Padding(
-          padding: const EdgeInsets.all(20),
-          child: Row(
-            children: [
-              const SectionChip(label: 'Candidates Table'),
-              const Spacer(),
-              _PageCountBadge(
-                current: provider.currentPage,
-                total: provider.totalPages,
-              ),
-              const SizedBox(width: 8),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                decoration: BoxDecoration(
-                  color: AppColors.bgSurface,
-                  borderRadius: BorderRadius.circular(6),
-                  border: Border.all(color: AppColors.border),
-                ),
-                child: Text(
-                  '${provider.total} total',
-                  style: AppTextStyles.bodySmall,
-                ),
-              ),
-            ],
-          ),
-        );
-      },
-    );
-  }
-
-  Widget _buildTableHeaderRow() {
-    const headers = ['CANDIDATE', 'STATUS', 'PHONE / EMAIL', 'LEVEL', 'CREATED', 'ACTIONS'];
-    final flexes = [2, 1, 2, 1, 2, 2];
-
+  Widget _buildEmpty() {
     return Container(
-      color: AppColors.bgSurface,
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-      child: Row(
-        children: headers.asMap().entries.map((entry) {
-          return Expanded(
-            flex: flexes[entry.key],
-            child: Text(
-              entry.value,
-              style: AppTextStyles.labelLarge.copyWith(fontSize: 11),
-            ),
-          );
-        }).toList(),
+      padding: const EdgeInsets.all(40),
+      decoration: BoxDecoration(
+        color: AppColors.bgCard,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: AppColors.border),
       ),
-    );
-  }
-
-  Widget _buildTable(BuildContext context) {
-    return Consumer<CandidatesProvider>(
-      builder: (context, provider, _) {
-        if (provider.isLoading) {
-          return const Padding(
-            padding: EdgeInsets.all(40),
-            child: Center(
-              child: CircularProgressIndicator(color: AppColors.accentCyan),
-            ),
-          );
-        }
-
-        if (provider.hasError) {
-          return Padding(
-            padding: const EdgeInsets.all(40),
-            child: Center(
-              child: Text(
-                provider.errorMessage ?? 'An error occurred',
-                style: AppTextStyles.bodyMedium.copyWith(
-                  color: const Color(0xFFEF4444),
-                ),
-              ),
-            ),
-          );
-        }
-
-        if (provider.candidates.isEmpty) {
-          return const Padding(
-            padding: EdgeInsets.all(40),
-            child: Center(
-              child: Text('No candidates found', style: AppTextStyles.bodyMedium),
-            ),
-          );
-        }
-
-        return Column(
-          children: [
-            _buildTableHeaderRow(),
-            ...provider.candidates.map(
-              (candidate) => _CandidateRow(
-                candidate: candidate,
-                isSelected: provider.selectedCandidate?.id == candidate.id,
-                onTap: () => provider.selectCandidate(candidate),
-                onAdvance: () => provider.advanceToInterview(candidate.id),
-              ),
-            ),
-          ],
-        );
-      },
-    );
-  }
-
-  Widget _buildPagination(BuildContext context) {
-    return Consumer<CandidatesProvider>(
-      builder: (context, provider, _) {
-        return Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
-          child: Row(
-            children: [
-              AppOutlinedButton(
-                label: 'Previous',
-                onPressed: provider.currentPage > 1
-                    ? () => provider.previousPage()
-                    : null,
-              ),
-              const Spacer(),
-              Text(provider.pageText, style: AppTextStyles.bodySmall),
-              const Spacer(),
-              AppOutlinedButton(
-                label: 'Next',
-                onPressed: provider.currentPage < provider.totalPages
-                    ? () => provider.nextPage()
-                    : null,
-              ),
-            ],
-          ),
-        );
-      },
+      child: const Center(child: Text('No candidates found', style: AppTextStyles.bodyMedium)),
     );
   }
 }
 
-class _CandidateRow extends StatelessWidget {
-  final Candidate candidate;
-  final bool isSelected;
+class _ActionButton extends StatelessWidget {
+  final String label;
   final VoidCallback onTap;
-  final VoidCallback onAdvance;
+  final bool destructive;
 
-  const _CandidateRow({
-    required this.candidate,
-    required this.isSelected,
+  const _ActionButton({
+    required this.label,
     required this.onTap,
-    required this.onAdvance,
+    this.destructive = false,
   });
 
   @override
   Widget build(BuildContext context) {
     return InkWell(
       onTap: onTap,
+      borderRadius: BorderRadius.circular(4),
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
         decoration: BoxDecoration(
-          color: isSelected ? AppColors.bgSurface : Colors.transparent,
-          border: Border(
-            bottom: BorderSide(color: AppColors.border),
+          border: Border.all(color: destructive ? AppColors.statusRejected.withValues(alpha: 0.3) : AppColors.border),
+          borderRadius: BorderRadius.circular(4),
+        ),
+        child: Text(
+          label,
+          style: AppTextStyles.bodySmall.copyWith(
+            color: destructive ? AppColors.statusRejected : AppColors.textSecondary,
+            fontSize: 11,
           ),
-        ),
-        child: Row(
-          children: [
-            // Candidate name
-            Expanded(
-              flex: 2,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(candidate.name, style: AppTextStyles.titleSmall),
-                  Text(candidate.id, style: AppTextStyles.bodySmall),
-                ],
-              ),
-            ),
-            // Status
-            Expanded(
-              flex: 1,
-              child: StatusBadge(label: candidate.status),
-            ),
-            // Phone / Email
-            Expanded(
-              flex: 2,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(candidate.displayPhone, style: AppTextStyles.bodySmall),
-                  Text(
-                    candidate.hasEmail ? candidate.email! : 'No email',
-                    style: AppTextStyles.bodySmall,
-                  ),
-                ],
-              ),
-            ),
-            // Level
-            Expanded(
-              flex: 1,
-              child: Text(candidate.level, style: AppTextStyles.bodySmall),
-            ),
-            // Created
-            Expanded(
-              flex: 2,
-              child: Text(
-                DateUtils.formatDateTime(candidate.createdAt),
-                style: AppTextStyles.bodySmall,
-              ),
-            ),
-            // Actions
-            Expanded(
-              flex: 2,
-              child: Row(
-                children: [
-                  AppOutlinedButton(
-                    label: 'View',
-                    onPressed: () {},
-                  ),
-                  const SizedBox(width: 6),
-                  AppPrimaryButton(
-                    label: 'Move to Interview',
-                    onPressed: candidate.status == 'applied' ? onAdvance : null,
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _PageCountBadge extends StatelessWidget {
-  final int current;
-  final int total;
-
-  const _PageCountBadge({required this.current, required this.total});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-      decoration: BoxDecoration(
-        color: AppColors.accentCyan.withValues(alpha: 0.15),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: AppColors.accentCyan.withValues(alpha: 0.3)),
-      ),
-      child: Text(
-        '$current/$total',
-        style: AppTextStyles.bodySmall.copyWith(
-          color: AppColors.accentCyan,
-          fontWeight: FontWeight.w600,
         ),
       ),
     );

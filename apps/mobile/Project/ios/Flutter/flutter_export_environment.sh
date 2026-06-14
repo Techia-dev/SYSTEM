@@ -1,8 +1,7 @@
 #!/bin/sh
 # This is a generated file; do not edit or check into version control.
-export "FLUTTER_ROOT=D:\mohmad\programing\Techia\techia-monorepo\flutter"
-export "FLUTTER_APPLICATION_PATH=D:\mohmad\programing\Techia\techia-monorepo\apps\mobile\Project"
-export "FLUTTER_FRAMEWORK_SWIFT_PACKAGE_PATH=D:\mohmad\programing\Techia\techia-monorepo\apps\mobile\Project\ios\Flutter\ephemeral\Packages\.packages\FlutterFramework"
+export "FLUTTER_ROOT=D:\Sphinx\src\flutter"
+export "FLUTTER_APPLICATION_PATH=C:\Users\sphinx_Mohsen\StudioProjects\SYSTEM\apps\mobile\Project"
 export "COCOAPODS_PARALLEL_CODE_SIGN=true"
 export "FLUTTER_TARGET=lib\main.dart"
 export "FLUTTER_BUILD_DIR=build"

@@ -2,7 +2,9 @@ class AppConstants {
   // API
   // استخدم --dart-define=API_URL=http://10.0.2.2:4000 للـ Android emulator
   // أو --dart-define=API_URL=http://192.168.1.x:4000 للـ device الحقيقي
-  static const String baseUrl = String.fromEnvironment('API_URL', defaultValue: 'http://localhost:4000');
+  //http://techiaapi.railway.internal
+  static const String baseUrl = String.fromEnvironment('API_URL',
+      defaultValue: 'https://techiaapi-production.up.railway.app');
   static const String apiCandidates = '/api/candidates';
   static const String apiApplications = '/api/applications';
   static const String apiOffers = '/api/offers';
@@ -26,10 +28,6 @@ class AppConstants {
   // Candidate Levels
   static const List<String> candidateLevels = [
     'All levels',
-    'B1',
-    'B2',
-    'C1',
-    'C2',
     'Junior',
     'Mid',
     'Senior',

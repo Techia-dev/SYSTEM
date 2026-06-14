@@ -53,20 +53,16 @@ class _StageTab extends StatelessWidget {
   Widget build(BuildContext context) {
     Color dotColor;
     Color bgColor;
-    Color borderColor;
 
     if (isActive) {
-      dotColor = AppColors.stageActive;
-      bgColor = AppColors.bgCardElevated;
-      borderColor = AppColors.borderLight;
+      dotColor = AppColors.accentEmerald;
+      bgColor = AppColors.accentEmerald.withValues(alpha: 0.08);
     } else if (isPast) {
-      dotColor = AppColors.accentCyan;
-      bgColor = AppColors.bgCardElevated;
-      borderColor = AppColors.borderLight;
+      dotColor = AppColors.accentEmerald;
+      bgColor = AppColors.bgSecondary;
     } else {
-      dotColor = AppColors.stageInactive;
-      bgColor = AppColors.bgCardElevated;
-      borderColor = AppColors.borderLight;
+      dotColor = AppColors.textMuted;
+      bgColor = AppColors.bgSecondary;
     }
 
     return Container(
@@ -75,7 +71,7 @@ class _StageTab extends StatelessWidget {
       decoration: BoxDecoration(
         color: bgColor,
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: borderColor),
+        border: Border.all(color: AppColors.border),
       ),
       child: Column(
         children: [

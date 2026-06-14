@@ -1,11 +1,10 @@
-import 'package:flutter/material.dart' hide DateUtils;
-import 'package:provider/provider.dart';
-import '../../../core/theme/app_colors.dart';
-import '../../../core/theme/app_text_styles.dart';
-import '../../../core/utils/app_utils.dart';
-import '../../../data/models/commission_model.dart';
-import '../../../providers/commissions_provider.dart';
-import '../../widgets/common/common_widgets.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:techia_sdk/techia_sdk.dart';
+import 'package:techia_ats/core/theme/app_colors.dart';
+import 'package:techia_ats/core/theme/app_text_styles.dart';
+import 'package:techia_ats/core/responsive/responsive.dart';
+import 'package:techia_ats/blocs/commissions/commissions_bloc.dart';
 
 class CommissionsScreen extends StatefulWidget {
   const CommissionsScreen({super.key});
@@ -19,134 +18,63 @@ class _CommissionsScreenState extends State<CommissionsScreen> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<CommissionsProvider>().loadCommissions();
+      context.read<CommissionsBloc>().add(CommissionsLoad());
     });
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppColors.bgPrimary,
-      body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(32),
-          child: Consumer<CommissionsProvider>(
-            builder: (context, provider, _) {
-              return Column(
+    return BlocBuilder<CommissionsBloc, CommissionsState>(
+      builder: (context, state) {
+        return Scaffold(
+          backgroundColor: AppColors.bgPrimary,
+          body: SafeArea(
+            child: SingleChildScrollView(
+              padding: screenPadding(context),
+              child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  _buildHeader(provider),
-                  const SizedBox(height: 32),
-                  _buildContent(provider),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text('Commissions', style: AppTextStyles.headlineLarge),
+                            const SizedBox(height: 4),
+                            Text(
+                              'Commissions are created automatically when an application is accepted.',
+                              style: AppTextStyles.bodySmall,
+                            ),
+                          ],
+                        ),
+                      ),
+                      OutlinedButton.icon(
+                        onPressed: () => context.read<CommissionsBloc>().add(CommissionsLoad()),
+                        icon: const Icon(Icons.refresh, size: 16),
+                        label: const Text('Retry'),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 20),
+                  if (state.isLoading)
+                    const Center(child: CircularProgressIndicator(color: AppColors.accentEmerald))
+                  else if (state.error != null)
+                    _buildError(state.error!)
+                  else if (state.items.isEmpty)
+                    _buildEmpty()
+                  else
+                    _buildTable(state.items),
                 ],
-              );
-            },
+              ),
+            ),
           ),
-        ),
-      ),
+        );
+      },
     );
   }
 
-  Widget _buildHeader(CommissionsProvider provider) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-          decoration: BoxDecoration(
-            color: AppColors.bgSurface,
-            borderRadius: BorderRadius.circular(6),
-            border: Border.all(color: AppColors.border),
-          ),
-          child: const Text('COMMISSIONS OVERVIEW', style: AppTextStyles.labelMedium),
-        ),
-        const SizedBox(height: 12),
-        Text('Commissions', style: AppTextStyles.displayLarge),
-        const SizedBox(height: 6),
-        Text(
-          'Track earned commissions, payment status, and due dates.',
-          style: AppTextStyles.bodyMedium,
-        ),
-      ],
-    );
-  }
-
-  Widget _buildContent(CommissionsProvider provider) {
-    if (provider.isLoading) {
-      return const Center(
-        child: Padding(
-          padding: EdgeInsets.all(60),
-          child: CircularProgressIndicator(color: AppColors.accentCyan),
-        ),
-      );
-    }
-
-    if (provider.hasError) {
-      return Center(
-        child: Padding(
-          padding: const EdgeInsets.all(60),
-          child: Text(
-            provider.errorMessage ?? 'An error occurred',
-            style: AppTextStyles.bodyMedium.copyWith(color: const Color(0xFFEF4444)),
-          ),
-        ),
-      );
-    }
-
-    if (provider.commissions.isEmpty) {
-      return const Center(
-        child: Padding(
-          padding: EdgeInsets.all(60),
-          child: Text('No commissions found', style: AppTextStyles.bodyMedium),
-        ),
-      );
-    }
-
-    final totalAmount = provider.commissions.fold<double>(
-      0, (sum, c) => sum + c.amount);
-    final paidCount = provider.commissions.where((c) => c.isPaid).length;
-    final overdueCount = provider.commissions.where((c) => c.isOverdue).length;
-
-    return Column(
-      children: [
-        _buildStatsRow(totalAmount, paidCount, overdueCount, provider.commissions.length),
-        const SizedBox(height: 24),
-        _buildList(provider),
-      ],
-    );
-  }
-
-  Widget _buildStatsRow(double totalAmount, int paidCount, int overdueCount, int total) {
-    return Row(
-      children: [
-        Expanded(
-          child: StatCard(
-            label: 'Total Amount',
-            value: '\$${totalAmount.toStringAsFixed(2)}',
-            description: 'Across all commissions',
-          ),
-        ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: StatCard(
-            label: 'Paid',
-            value: paidCount.toString(),
-            description: '$paidCount of $total paid',
-          ),
-        ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: StatCard(
-            label: 'Overdue',
-            value: overdueCount.toString(),
-            description: 'Past due date',
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildList(CommissionsProvider provider) {
+  Widget _buildTable(List<Commission> items) {
     return Container(
       decoration: BoxDecoration(
         color: AppColors.bgCard,
@@ -154,169 +82,115 @@ class _CommissionsScreenState extends State<CommissionsScreen> {
         border: Border.all(color: AppColors.border),
       ),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _buildListHeader(provider),
-          const Divider(height: 1),
-          _buildListHeaderRow(),
-          const Divider(height: 1),
-          ...provider.commissions.map((c) => _CommissionRow(commission: c)),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildListHeader(CommissionsProvider provider) {
-    return Padding(
-      padding: const EdgeInsets.all(20),
-      child: Row(
-        children: [
-          const SectionChip(label: 'All Commissions'),
-          const Spacer(),
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-            decoration: BoxDecoration(
-              color: AppColors.bgSurface,
-              borderRadius: BorderRadius.circular(6),
-              border: Border.all(color: AppColors.border),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            decoration: const BoxDecoration(
+              border: Border(bottom: BorderSide(color: AppColors.border)),
             ),
-            child: Text(
-              '${provider.commissions.length} commission${provider.commissions.length == 1 ? '' : 's'}',
-              style: AppTextStyles.bodySmall,
+            child: Row(
+              children: [
+                Expanded(child: Text('Candidate', style: AppTextStyles.tableHeader)),
+                Expanded(child: Text('Offer', style: AppTextStyles.tableHeader)),
+                Expanded(child: Text('Amount', style: AppTextStyles.tableHeader)),
+                Expanded(child: Text('Status', style: AppTextStyles.tableHeader)),
+                Expanded(child: Text('Due date', style: AppTextStyles.tableHeader)),
+                Expanded(child: Text('Earned', style: AppTextStyles.tableHeader)),
+              ],
             ),
+          ),
+          ListView.separated(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            itemCount: items.length,
+            separatorBuilder: (_, __) => const Divider(height: 1, color: AppColors.border),
+            itemBuilder: (_, i) {
+              final c = items[i];
+              return Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(c.candidateName, style: AppTextStyles.titleSmall),
+                          Text(c.candidateName.isNotEmpty ? '' : '', style: AppTextStyles.bodySmall),
+                        ],
+                      ),
+                    ),
+                    Expanded(child: Text(c.offerTitle, style: AppTextStyles.bodyMedium)),
+                    Expanded(child: Text('\EGP ${c.amount.toStringAsFixed(0)}', style: AppTextStyles.bodyMedium)),
+                    Expanded(child: _StatusBadge(c.status)),
+                    Expanded(child: Text(_formatDate(c.dueDate), style: AppTextStyles.bodySmall)),
+                    Expanded(child: Text(_formatDate(c.earnedAt), style: AppTextStyles.bodySmall)),
+                  ],
+                ),
+              );
+            },
           ),
         ],
       ),
     );
   }
 
-  Widget _buildListHeaderRow() {
-    const headers = ['CANDIDATE', 'OFFER', 'AMOUNT', 'STATUS', 'EARNED', 'DUE'];
-    const flexes = [2, 2, 2, 1, 2, 2];
-
+  Widget _StatusBadge(String status) {
+    final isPaid = status.toLowerCase() == 'paid';
     return Container(
-      color: AppColors.bgSurface,
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-      child: Row(
-        children: headers.asMap().entries.map((entry) {
-          return Expanded(
-            flex: flexes[entry.key],
-            child: Text(
-              entry.value,
-              style: AppTextStyles.labelLarge.copyWith(fontSize: 11),
-            ),
-          );
-        }).toList(),
-      ),
-    );
-  }
-}
-
-class _CommissionRow extends StatelessWidget {
-  final Commission commission;
-  const _CommissionRow({required this.commission});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
       decoration: BoxDecoration(
-        border: Border(bottom: BorderSide(color: AppColors.border)),
-      ),
-      child: Row(
-        children: [
-          Expanded(
-            flex: 2,
-            child: Text(
-              commission.candidateName.isEmpty
-                  ? commission.candidateId
-                  : commission.candidateName,
-              style: AppTextStyles.titleSmall,
-            ),
-          ),
-          Expanded(
-            flex: 2,
-            child: Text(
-              commission.offerTitle.isEmpty
-                  ? commission.offerId
-                  : commission.offerTitle,
-              style: AppTextStyles.bodyMedium,
-            ),
-          ),
-          Expanded(
-            flex: 2,
-            child: Text(
-              '\$${commission.amount.toStringAsFixed(2)}',
-              style: AppTextStyles.bodyMedium.copyWith(
-                color: AppColors.accentCyan,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ),
-          Expanded(
-            flex: 1,
-            child: _buildStatusBadge(commission),
-          ),
-          Expanded(
-            flex: 2,
-            child: Text(
-              DateUtils.formatDate(commission.earnedAt),
-              style: AppTextStyles.bodySmall,
-            ),
-          ),
-          Expanded(
-            flex: 2,
-            child: Text(
-              DateUtils.formatDate(commission.dueDate),
-              style: AppTextStyles.bodySmall.copyWith(
-                color: commission.isOverdue
-                    ? const Color(0xFFEF4444)
-                    : AppColors.textMuted,
-                fontWeight: commission.isOverdue
-                    ? FontWeight.w600
-                    : FontWeight.w400,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildStatusBadge(Commission commission) {
-    Color bgColor;
-    Color textColor;
-    String label;
-
-    if (commission.isPaid) {
-      bgColor = const Color(0xFF064E3B);
-      textColor = const Color(0xFF34D399);
-      label = 'Paid';
-    } else if (commission.isOverdue) {
-      bgColor = const Color(0xFF3B0A0A);
-      textColor = const Color(0xFFEF4444);
-      label = 'Overdue';
-    } else {
-      bgColor = const Color(0xFF1F2937);
-      textColor = AppColors.textSecondary;
-      label = 'Pending';
-    }
-
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      decoration: BoxDecoration(
-        color: bgColor,
-        borderRadius: BorderRadius.circular(20),
+        color: isPaid ? AppColors.accentEmerald.withValues(alpha: 0.1) : AppColors.statusPending.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(4),
       ),
       child: Text(
-        label,
+        status[0].toUpperCase() + status.substring(1),
         style: AppTextStyles.bodySmall.copyWith(
-          color: textColor,
-          fontWeight: FontWeight.w600,
+          color: isPaid ? AppColors.accentEmerald : AppColors.statusPending,
+          fontWeight: FontWeight.w500,
           fontSize: 11,
         ),
-        textAlign: TextAlign.center,
       ),
+    );
+  }
+
+  String _formatDate(String dateStr) {
+    final dt = DateTime.tryParse(dateStr);
+    if (dt == null) return dateStr;
+    return '${_months[dt.month - 1]} ${dt.day}, ${dt.year}';
+  }
+
+  static const _months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+  Widget _buildError(String error) {
+    return Container(
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        color: AppColors.bgCard,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: AppColors.border),
+      ),
+      child: Column(
+        children: [
+          IconButton(
+            icon: const Icon(Icons.refresh, color: AppColors.accentEmerald),
+            onPressed: () => context.read<CommissionsBloc>().add(CommissionsLoad()),
+          ),
+          const SizedBox(height: 12),
+          Text(error, style: AppTextStyles.bodySmall.copyWith(color: AppColors.statusRejected)),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildEmpty() {
+    return Container(
+      padding: const EdgeInsets.all(40),
+      decoration: BoxDecoration(
+        color: AppColors.bgCard,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: AppColors.border),
+      ),
+      child: const Center(child: Text('No commissions found', style: AppTextStyles.bodyMedium)),
     );
   }
 }

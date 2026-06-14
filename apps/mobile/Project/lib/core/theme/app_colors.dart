@@ -2,65 +2,45 @@ import 'package:flutter/material.dart';
 
 class AppColors {
   // Background layers
-  static const Color bgPrimary = Color(0xFF0A0F1A);
-  static const Color bgSecondary = Color(0xFF0D1422);
-  static const Color bgCard = Color(0xFF111827);
-  static const Color bgCardElevated = Color(0xFF161E2E);
-  static const Color bgInput = Color(0xFF0D1422);
-  static const Color bgSurface = Color(0xFF1A2235);
+  static const Color bgPrimary = Color(0xFFFAFAFA);
+  static const Color bgSecondary = Color(0xFFF4F4F5);
+  static const Color bgCard = Color(0xFFFFFFFF);
+  static const Color bgCardElevated = Color(0xFFF9FAFB);
+  static const Color bgInput = Color(0xFFFFFFFF);
+  static const Color bgSurface = Color(0xFFF4F4F5);
 
-  // Cyan/Teal accent (primary CTA)
-  static const Color accentCyan = Color(0xFF38BDF8);
-  static const Color accentCyanDark = Color(0xFF0EA5E9);
-  static const Color accentCyanLight = Color(0xFF7DD3FC);
+  // Emerald accent (primary CTA)
+  static const Color accentEmerald = Color(0xFF059669);
+  static const Color accentEmeraldDark = Color(0xFF047857);
+  static const Color accentEmeraldLight = Color(0xFF34D399);
+
+  // Sidebar
+  static const Color sidebarBg = Color(0xFFFFFFFF);
+  static const Color sidebarHover = Color(0xFFF4F4F5);
+  static const Color sidebarActive = Color(0xFFF0FDF4);
+  static const Color sidebarActiveText = Color(0xFF059669);
 
   // Status colors
-  static const Color statusApplied = Color(0xFF0EA5E9);
-  static const Color statusInterview = Color(0xFF6B7280);
-  static const Color statusHired = Color(0xFF6B7280);
-  static const Color statusAppliedBg = Color(0xFF0C2340);
+  static const Color statusAccepted = Color(0xFF059669);
+  static const Color statusRejected = Color(0xFFDC2626);
+  static const Color statusActive = Color(0xFF059669);
+  static const Color statusPaid = Color(0xFF059669);
+  static const Color statusPending = Color(0xFFD97706);
+  static const Color statusInactive = Color(0xFFA1A1AA);
 
   // Text
-  static const Color textPrimary = Color(0xFFFFFFFF);
-  static const Color textSecondary = Color(0xFF94A3B8);
-  static const Color textMuted = Color(0xFF64748B);
-  static const Color textLabel = Color(0xFF6B7280);
+  static const Color textPrimary = Color(0xFF18181B);
+  static const Color textSecondary = Color(0xFF52525B);
+  static const Color textMuted = Color(0xFFA1A1AA);
+  static const Color textLabel = Color(0xFF71717A);
 
   // Border
-  static const Color border = Color(0xFF1E293B);
-  static const Color borderLight = Color(0xFF263148);
+  static const Color border = Color(0xFFE4E4E7);
+  static const Color borderLight = Color(0xFFF4F4F5);
 
-  // Pipeline stages
-  static const Color stageActive = Color(0xFFF59E0B);
-  static const Color stageInactive = Color(0xFF374151);
-
-  // Gradient for background
-  static const LinearGradient backgroundGradient = LinearGradient(
-    begin: Alignment.topLeft,
-    end: Alignment.bottomRight,
-    colors: [
-      Color(0xFF0A0F1A),
-      Color(0xFF0D1828),
-      Color(0xFF0A0F1A),
-    ],
-  );
-
-  // Teal glow for login background
-  static const RadialGradient loginTopGlow = RadialGradient(
-    center: Alignment(-0.8, -0.8),
-    radius: 1.5,
-    colors: [
-      Color(0x2506B6D4),
-      Color(0x000A0F1A),
-    ],
-  );
-
-  static const RadialGradient loginBottomGlow = RadialGradient(
-    center: Alignment(0.8, 0.8),
-    radius: 1.2,
-    colors: [
-      Color(0x1506B6D4),
-      Color(0x000A0F1A),
-    ],
-  );
+  // Chart colors
+  static const Color chartAccepted = Color(0xFF059669);
+  static const Color chartRejected = Color(0xFFDC2626);
+  static const Color chartPaid = Color(0xFF3B82F6);
+  static const Color chartPending = Color(0xFFD97706);
 }

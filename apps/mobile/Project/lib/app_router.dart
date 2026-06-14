@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'core/constants/app_routes.dart';
-import 'providers/auth_provider.dart';
+import 'blocs/auth/auth_bloc.dart';
 import 'presentation/screens/auth/login_screen.dart';
 import 'presentation/widgets/navigation/main_scaffold.dart';
 
@@ -38,27 +38,24 @@ class _SplashScreenState extends State<_SplashScreen> {
   @override
   void initState() {
     super.initState();
-    _checkSession();
-  }
-
-  Future<void> _checkSession() async {
-    final auth = context.read<AuthProvider>();
-    await auth.checkStoredSession();
-    if (!mounted) return;
-
-    if (auth.isAuthenticated) {
-      Navigator.pushReplacementNamed(context, AppRoutes.dashboard);
-    } else {
-      Navigator.pushReplacementNamed(context, AppRoutes.login);
-    }
+    WidgetsBinding.instance.addPostFrameCallback(
+      (_) => context.read<AuthBloc>().add(AuthCheckSession()),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
-    return const Scaffold(
-      body: Center(
-        child: CircularProgressIndicator(
-          color: Color(0xFF38BDF8),
+    return BlocListener<AuthBloc, AuthState>(
+      listener: (context, state) {
+        if (state is AuthAuthenticated) {
+          Navigator.pushReplacementNamed(context, AppRoutes.dashboard);
+        } else if (state is AuthUnauthenticated) {
+          Navigator.pushReplacementNamed(context, AppRoutes.login);
+        }
+      },
+      child: const Scaffold(
+        body: Center(
+          child: CircularProgressIndicator(color: Color(0xFF38BDF8)),
         ),
       ),
     );

@@ -1,0 +1,34 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "dart-sdk",
+            "cwd": "packages\\dart-sdk",
+            "request": "launch",
+            "type": "dart"
+        },
+        {
+            "name": "Project",
+            "cwd": "apps\\mobile\\Project",
+            "request": "launch",
+            "type": "dart"
+        },
+        {
+            "name": "Project (profile mode)",
+            "cwd": "apps\\mobile\\Project",
+            "request": "launch",
+            "type": "dart",
+            "flutterMode": "profile"
+        },
+        {
+            "name": "Project (release mode)",
+            "cwd": "apps\\mobile\\Project",
+            "request": "launch",
+            "type": "dart",
+            "flutterMode": "release"
+        }
+    ]
+}

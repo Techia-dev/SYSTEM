@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:techia_ats/core/theme/app_colors.dart';
 import 'package:techia_ats/core/theme/app_text_styles.dart';
 
-/// Pill-style status badge
 class StatusBadge extends StatelessWidget {
   final String label;
   final Color? color;
@@ -19,13 +18,19 @@ class StatusBadge extends StatelessWidget {
     if (color != null) return color!;
     switch (label.toLowerCase()) {
       case 'applied':
-        return AppColors.statusAppliedBg;
-      case 'interview':
-        return const Color(0xFF1F2937);
-      case 'hired':
-        return const Color(0xFF064E3B);
+        return AppColors.bgSecondary;
+      case 'accepted':
+        return AppColors.accentEmerald.withValues(alpha: 0.1);
+      case 'rejected':
+        return AppColors.statusRejected.withValues(alpha: 0.1);
+      case 'paid':
+        return AppColors.accentEmerald.withValues(alpha: 0.1);
+      case 'pending':
+        return AppColors.statusPending.withValues(alpha: 0.1);
+      case 'active':
+        return AppColors.accentEmerald.withValues(alpha: 0.1);
       default:
-        return AppColors.bgSurface;
+        return AppColors.bgSecondary;
     }
   }
 
@@ -33,11 +38,17 @@ class StatusBadge extends StatelessWidget {
     if (textColor != null) return textColor!;
     switch (label.toLowerCase()) {
       case 'applied':
-        return AppColors.accentCyan;
-      case 'interview':
         return AppColors.textSecondary;
-      case 'hired':
-        return const Color(0xFF34D399);
+      case 'accepted':
+        return AppColors.accentEmerald;
+      case 'rejected':
+        return AppColors.statusRejected;
+      case 'paid':
+        return AppColors.accentEmerald;
+      case 'pending':
+        return AppColors.statusPending;
+      case 'active':
+        return AppColors.accentEmerald;
       default:
         return AppColors.textSecondary;
     }
@@ -46,16 +57,16 @@ class StatusBadge extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
       decoration: BoxDecoration(
         color: _bgColor,
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(4),
       ),
       child: Text(
         label[0].toUpperCase() + label.substring(1),
         style: AppTextStyles.bodySmall.copyWith(
           color: _textColor,
-          fontWeight: FontWeight.w600,
+          fontWeight: FontWeight.w500,
           fontSize: 11,
         ),
       ),
@@ -63,30 +74,6 @@ class StatusBadge extends StatelessWidget {
   }
 }
 
-/// Chip-style label badge (e.g. "CANDIDATES TABLE", "SELECTED CANDIDATE")
-class SectionChip extends StatelessWidget {
-  final String label;
-
-  const SectionChip({super.key, required this.label});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-      decoration: BoxDecoration(
-        color: AppColors.bgSurface,
-        borderRadius: BorderRadius.circular(6),
-        border: Border.all(color: AppColors.border),
-      ),
-      child: Text(
-        label.toUpperCase(),
-        style: AppTextStyles.labelMedium.copyWith(fontSize: 10),
-      ),
-    );
-  }
-}
-
-/// Candidate initials avatar
 class CandidateAvatar extends StatelessWidget {
   final String name;
   final double size;
@@ -110,18 +97,14 @@ class CandidateAvatar extends StatelessWidget {
       width: size,
       height: size,
       decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [Color(0xFF0E7490), Color(0xFF0284C7)],
-        ),
-        borderRadius: BorderRadius.circular(10),
+        color: AppColors.bgSecondary,
+        borderRadius: BorderRadius.circular(8),
       ),
       alignment: Alignment.center,
       child: Text(
         initials,
         style: TextStyle(
-          color: Colors.white,
+          color: AppColors.textPrimary,
           fontSize: size * 0.35,
           fontWeight: FontWeight.w700,
           fontFamily: AppTextStyles.fontFamily,
@@ -131,43 +114,6 @@ class CandidateAvatar extends StatelessWidget {
   }
 }
 
-/// Stat card for dashboard top row
-class StatCard extends StatelessWidget {
-  final String label;
-  final String value;
-  final String description;
-
-  const StatCard({
-    super.key,
-    required this.label,
-    required this.value,
-    required this.description,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: AppColors.bgCard,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.border),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(label.toUpperCase(), style: AppTextStyles.labelLarge),
-          const SizedBox(height: 8),
-          Text(value, style: AppTextStyles.displayMedium.copyWith(fontSize: 32)),
-          const SizedBox(height: 6),
-          Text(description, style: AppTextStyles.bodySmall),
-        ],
-      ),
-    );
-  }
-}
-
-/// App-styled outlined button
 class AppOutlinedButton extends StatelessWidget {
   final String label;
   final VoidCallback? onPressed;
@@ -203,7 +149,6 @@ class AppOutlinedButton extends StatelessWidget {
   }
 }
 
-/// Primary cyan CTA button
 class AppPrimaryButton extends StatelessWidget {
   final String label;
   final VoidCallback? onPressed;
@@ -232,7 +177,7 @@ class AppPrimaryButton extends StatelessWidget {
                 height: 16,
                 child: CircularProgressIndicator(
                   strokeWidth: 2,
-                  color: AppColors.bgPrimary,
+                  color: Colors.white,
                 ),
               )
             : Row(
@@ -250,7 +195,6 @@ class AppPrimaryButton extends StatelessWidget {
   }
 }
 
-/// Divider with label
 class LabeledDivider extends StatelessWidget {
   final String label;
 
@@ -271,7 +215,30 @@ class LabeledDivider extends StatelessWidget {
   }
 }
 
-/// Info row for candidate detail (label + value)
+class SectionChip extends StatelessWidget {
+  final String label;
+
+  const SectionChip({super.key, required this.label});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      decoration: BoxDecoration(
+        color: AppColors.bgSecondary,
+        borderRadius: BorderRadius.circular(6),
+        border: Border.all(color: AppColors.border),
+      ),
+      child: Text(
+        label.toUpperCase(),
+        style: AppTextStyles.labelMedium.copyWith(
+          color: AppColors.textMuted,
+        ),
+      ),
+    );
+  }
+}
+
 class InfoRow extends StatelessWidget {
   final String label;
   final String value;

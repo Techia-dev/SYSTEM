@@ -43,8 +43,8 @@ class AppTextStyles {
 
   static const TextStyle titleSmall = TextStyle(
     fontFamily: fontFamily,
-    fontSize: 13,
-    fontWeight: FontWeight.w600,
+    fontSize: 14,
+    fontWeight: FontWeight.w500,
     color: AppColors.textPrimary,
   );
 
@@ -71,7 +71,7 @@ class AppTextStyles {
 
   static const TextStyle labelLarge = TextStyle(
     fontFamily: fontFamily,
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: FontWeight.w600,
     color: AppColors.textLabel,
     letterSpacing: 1.0,
@@ -79,9 +79,16 @@ class AppTextStyles {
 
   static const TextStyle labelMedium = TextStyle(
     fontFamily: fontFamily,
-    fontSize: 11,
+    fontSize: 10,
     fontWeight: FontWeight.w500,
     color: AppColors.textMuted,
     letterSpacing: 0.8,
+  );
+
+  static const TextStyle tableHeader = TextStyle(
+    fontFamily: fontFamily,
+    fontSize: 12,
+    fontWeight: FontWeight.w600,
+    color: AppColors.textLabel,
   );
 }

@@ -1,0 +1,11 @@
+name: techia_sdk
+description: Dart SDK for Techia ATS API - shared models, API client, and repositories
+version: 0.1.0
+publish_to: none
+
+environment:
+  sdk: '>=3.0.0 <4.0.0'
+
+dependencies:
+  http: ^1.2.1
+  intl: ^0.19.0

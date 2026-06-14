@@ -1,11 +1,10 @@
-import 'package:flutter/material.dart' hide DateUtils;
-import 'package:provider/provider.dart';
-import '../../../core/theme/app_colors.dart';
-import '../../../core/theme/app_text_styles.dart';
-import '../../../core/utils/app_utils.dart';
-import '../../../data/models/offer_model.dart';
-import '../../../providers/offers_provider.dart';
-import '../../widgets/common/common_widgets.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:techia_sdk/techia_sdk.dart';
+import 'package:techia_ats/core/theme/app_colors.dart';
+import 'package:techia_ats/core/theme/app_text_styles.dart';
+import 'package:techia_ats/core/responsive/responsive.dart';
+import 'package:techia_ats/blocs/offers/offers_bloc.dart';
 
 class OffersScreen extends StatefulWidget {
   const OffersScreen({super.key});
@@ -15,93 +14,115 @@ class OffersScreen extends StatefulWidget {
 }
 
 class _OffersScreenState extends State<OffersScreen> {
+  final _searchController = TextEditingController();
+  bool _showInactive = false;
+
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<OffersProvider>().loadOffers();
+      context.read<OffersBloc>().add(OffersLoad());
     });
   }
 
   @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppColors.bgPrimary,
-      body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(32),
-          child: Consumer<OffersProvider>(
-            builder: (context, provider, _) {
-              return Column(
+    return BlocBuilder<OffersBloc, OffersState>(
+      builder: (context, state) {
+        var items = state.items;
+        if (_searchController.text.isNotEmpty) {
+          final q = _searchController.text.toLowerCase();
+          items = items.where((o) =>
+            o.title.toLowerCase().contains(q) ||
+            (o.company?.toLowerCase().contains(q) ?? false)
+          ).toList();
+        }
+        if (!_showInactive) {
+          items = items.where((o) => o.isActive).toList();
+        }
+
+        return Scaffold(
+          backgroundColor: AppColors.bgPrimary,
+          body: SafeArea(
+            child: SingleChildScrollView(
+              padding: screenPadding(context),
+              child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  _buildHeader(provider),
-                  const SizedBox(height: 32),
-                  _buildContent(provider),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text('Offers', style: AppTextStyles.headlineLarge),
+                            const SizedBox(height: 4),
+                            Text('${items.length} offer${items.length == 1 ? '' : 's'}', style: AppTextStyles.bodySmall),
+                          ],
+                        ),
+                      ),
+                      ElevatedButton.icon(
+                        onPressed: () => _showNewOfferDialog(context),
+                        icon: const Icon(Icons.add, size: 16),
+                        label: const Text('New offer'),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 20),
+                  // Search & Show inactive
+                  Row(
+                    children: [
+                      Expanded(
+                        child: TextField(
+                          controller: _searchController,
+                          onChanged: (_) => setState(() {}),
+                          style: AppTextStyles.bodyMedium.copyWith(color: AppColors.textPrimary),
+                          decoration: const InputDecoration(
+                            hintText: 'Search title, company\u2026',
+                            prefixIcon: Icon(Icons.search, color: AppColors.textMuted, size: 18),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Checkbox(
+                            value: _showInactive,
+                            onChanged: (v) => setState(() => _showInactive = v ?? false),
+                            activeColor: AppColors.accentEmerald,
+                            visualDensity: VisualDensity.compact,
+                          ),
+                          Text('Show inactive', style: AppTextStyles.bodySmall),
+                        ],
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 20),
+                  if (state.isLoading)
+                    const Center(child: CircularProgressIndicator(color: AppColors.accentEmerald))
+                  else if (state.error != null)
+                    _buildError(state.error!)
+                  else if (items.isEmpty)
+                    _buildEmpty()
+                  else
+                    _buildTable(items),
                 ],
-              );
-            },
+              ),
+            ),
           ),
-        ),
-      ),
+        );
+      },
     );
   }
 
-  Widget _buildHeader(OffersProvider provider) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-          decoration: BoxDecoration(
-            color: AppColors.bgSurface,
-            borderRadius: BorderRadius.circular(6),
-            border: Border.all(color: AppColors.border),
-          ),
-          child: const Text('OFFERS MANAGEMENT', style: AppTextStyles.labelMedium),
-        ),
-        const SizedBox(height: 12),
-        Text('Offers', style: AppTextStyles.displayLarge),
-        const SizedBox(height: 6),
-        Text(
-          'Manage job offers, commissions, and availability.',
-          style: AppTextStyles.bodyMedium,
-        ),
-      ],
-    );
-  }
-
-  Widget _buildContent(OffersProvider provider) {
-    if (provider.isLoading) {
-      return const Center(
-        child: Padding(
-          padding: EdgeInsets.all(60),
-          child: CircularProgressIndicator(color: AppColors.accentCyan),
-        ),
-      );
-    }
-
-    if (provider.hasError) {
-      return Center(
-        child: Padding(
-          padding: const EdgeInsets.all(60),
-          child: Text(
-            provider.errorMessage ?? 'An error occurred',
-            style: AppTextStyles.bodyMedium.copyWith(color: const Color(0xFFEF4444)),
-          ),
-        ),
-      );
-    }
-
-    if (provider.offers.isEmpty) {
-      return const Center(
-        child: Padding(
-          padding: EdgeInsets.all(60),
-          child: Text('No offers found', style: AppTextStyles.bodyMedium),
-        ),
-      );
-    }
-
+  Widget _buildTable(List<Offer> items) {
     return Container(
       decoration: BoxDecoration(
         color: AppColors.bgCard,
@@ -109,143 +130,175 @@ class _OffersScreenState extends State<OffersScreen> {
         border: Border.all(color: AppColors.border),
       ),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _buildListHeader(provider),
-          const Divider(height: 1),
-          _buildListHeaderRow(),
-          const Divider(height: 1),
-          ...provider.offers.map((offer) => _OfferRow(offer: offer)),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildListHeader(OffersProvider provider) {
-    return Padding(
-      padding: const EdgeInsets.all(20),
-      child: Row(
-        children: [
-          const SectionChip(label: 'All Offers'),
-          const Spacer(),
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-            decoration: BoxDecoration(
-              color: AppColors.bgSurface,
-              borderRadius: BorderRadius.circular(6),
-              border: Border.all(color: AppColors.border),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            decoration: const BoxDecoration(
+              border: Border(bottom: BorderSide(color: AppColors.border)),
             ),
-            child: Text(
-              '${provider.offers.length} offer${provider.offers.length == 1 ? '' : 's'}',
-              style: AppTextStyles.bodySmall,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildListHeaderRow() {
-    const headers = ['TITLE', 'COMPANY', 'COMMISSION', 'DELAY', 'STATUS', 'CREATED'];
-    const flexes = [3, 2, 2, 1, 1, 2];
-
-    return Container(
-      color: AppColors.bgSurface,
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-      child: Row(
-        children: headers.asMap().entries.map((entry) {
-          return Expanded(
-            flex: flexes[entry.key],
-            child: Text(
-              entry.value,
-              style: AppTextStyles.labelLarge.copyWith(fontSize: 11),
-            ),
-          );
-        }).toList(),
-      ),
-    );
-  }
-}
-
-class _OfferRow extends StatelessWidget {
-  final Offer offer;
-  const _OfferRow({required this.offer});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
-      decoration: BoxDecoration(
-        border: Border(bottom: BorderSide(color: AppColors.border)),
-      ),
-      child: Row(
-        children: [
-          Expanded(
-            flex: 3,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+            child: Row(
               children: [
-                Text(offer.title, style: AppTextStyles.titleSmall),
-                Text(offer.id, style: AppTextStyles.bodySmall),
+                Expanded(child: Text('Title', style: AppTextStyles.tableHeader)),
+                Expanded(child: Text('Company', style: AppTextStyles.tableHeader)),
+                Expanded(child: Text('Commission', style: AppTextStyles.tableHeader)),
+                Expanded(child: Text('Status', style: AppTextStyles.tableHeader)),
+                Expanded(child: Text('Created', style: AppTextStyles.tableHeader)),
+                const SizedBox(width: 96),
               ],
             ),
           ),
-          Expanded(
-            flex: 2,
-            child: Text(
-              offer.company ?? 'N/A',
-              style: AppTextStyles.bodyMedium,
-            ),
-          ),
-          Expanded(
-            flex: 2,
-            child: Text(
-              '\$${offer.commission.toStringAsFixed(2)}',
-              style: AppTextStyles.bodyMedium.copyWith(
-                color: AppColors.accentCyan,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ),
-          Expanded(
-            flex: 1,
-            child: Text(
-              '${offer.commissionDelay}d',
-              style: AppTextStyles.bodyMedium,
-            ),
-          ),
-          Expanded(
-            flex: 1,
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-              decoration: BoxDecoration(
-                color: offer.isActive
-                    ? const Color(0xFF064E3B)
-                    : const Color(0xFF3B0A0A),
-                borderRadius: BorderRadius.circular(20),
-              ),
-              child: Text(
-                offer.isActive ? 'Active' : 'Inactive',
-                style: AppTextStyles.bodySmall.copyWith(
-                  color: offer.isActive
-                      ? const Color(0xFF34D399)
-                      : const Color(0xFFEF4444),
-                  fontWeight: FontWeight.w600,
-                  fontSize: 11,
+          ListView.separated(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            itemCount: items.length,
+            separatorBuilder: (_, __) => const Divider(height: 1, color: AppColors.border),
+            itemBuilder: (_, i) {
+              final o = items[i];
+              return Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                child: Row(
+                  children: [
+                    Expanded(child: Text(o.title, style: AppTextStyles.titleSmall)),
+                    Expanded(child: Text(o.company ?? '—', style: AppTextStyles.bodyMedium)),
+                    Expanded(child: Text('\EGP ${o.commission.toStringAsFixed(0)}', style: AppTextStyles.bodyMedium)),
+                    Expanded(child: _StatusBadge(o.isActive)),
+                    Expanded(child: Text(_formatDate(o.createdAt), style: AppTextStyles.bodySmall)),
+                    SizedBox(
+                      width: 96,
+                      child: TextButton(
+                        onPressed: o.isActive ? () => context.read<OffersBloc>().add(OffersDeactivate(o.id)) : null,
+                        child: Text(o.isActive ? 'Deactivate' : '', style: AppTextStyles.bodySmall.copyWith(color: AppColors.statusRejected)),
+                      ),
+                    ),
+                  ],
                 ),
-                textAlign: TextAlign.center,
-              ),
-            ),
-          ),
-          Expanded(
-            flex: 2,
-            child: Text(
-              DateUtils.formatDate(offer.createdAt),
-              style: AppTextStyles.bodySmall,
-            ),
+              );
+            },
           ),
         ],
       ),
+    );
+  }
+
+  Widget _StatusBadge(bool isActive) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+      decoration: BoxDecoration(
+        color: isActive ? AppColors.accentEmerald.withValues(alpha: 0.1) : AppColors.bgSecondary,
+        borderRadius: BorderRadius.circular(4),
+      ),
+      child: Text(
+        isActive ? 'Active' : 'Inactive',
+        style: AppTextStyles.bodySmall.copyWith(
+          color: isActive ? AppColors.accentEmerald : AppColors.textMuted,
+          fontWeight: FontWeight.w500,
+          fontSize: 11,
+        ),
+      ),
+    );
+  }
+
+  void _showNewOfferDialog(BuildContext context) {
+    final titleCtrl = TextEditingController();
+    final companyCtrl = TextEditingController();
+    final descCtrl = TextEditingController();
+    final commissionCtrl = TextEditingController(text: '0');
+    final delayCtrl = TextEditingController(text: '0');
+
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('New offer'),
+        content: SizedBox(
+          width: 400,
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('Fill in the offer details.', style: AppTextStyles.bodySmall),
+                const SizedBox(height: 16),
+                Text('Title *', style: AppTextStyles.bodySmall),
+                const SizedBox(height: 4),
+                TextField(controller: titleCtrl),
+                const SizedBox(height: 12),
+                Text('Company', style: AppTextStyles.bodySmall),
+                const SizedBox(height: 4),
+                TextField(controller: companyCtrl),
+                const SizedBox(height: 12),
+                Text('Description', style: AppTextStyles.bodySmall),
+                const SizedBox(height: 4),
+                TextField(controller: descCtrl, maxLines: 3),
+                const SizedBox(height: 12),
+                Text('Commission (EGP)', style: AppTextStyles.bodySmall),
+                const SizedBox(height: 4),
+                TextField(controller: commissionCtrl, keyboardType: TextInputType.number),
+                const SizedBox(height: 12),
+                Text('Commission delay (days)', style: AppTextStyles.bodySmall),
+                const SizedBox(height: 4),
+                TextField(controller: delayCtrl, keyboardType: TextInputType.number),
+              ],
+            ),
+          ),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
+          ElevatedButton(
+            onPressed: () {
+              context.read<OffersBloc>().add(OffersCreate({
+                'title': titleCtrl.text,
+                'company': companyCtrl.text,
+                'description': descCtrl.text,
+                'commission': double.tryParse(commissionCtrl.text) ?? 0,
+                'commission_delay': int.tryParse(delayCtrl.text) ?? 0,
+              }));
+              Navigator.pop(ctx);
+            },
+            child: const Text('Add offer'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  String _formatDate(String dateStr) {
+    final dt = DateTime.tryParse(dateStr);
+    if (dt == null) return dateStr;
+    return '${_months[dt.month - 1]} ${dt.day}, ${dt.year}';
+  }
+
+  static const _months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+  Widget _buildError(String error) {
+    return Container(
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        color: AppColors.bgCard,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: AppColors.border),
+      ),
+      child: Column(
+        children: [
+          IconButton(
+            icon: const Icon(Icons.refresh, color: AppColors.accentEmerald),
+            onPressed: () => context.read<OffersBloc>().add(OffersLoad()),
+          ),
+          const SizedBox(height: 12),
+          Text(error, style: AppTextStyles.bodySmall.copyWith(color: AppColors.statusRejected)),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildEmpty() {
+    return Container(
+      padding: const EdgeInsets.all(40),
+      decoration: BoxDecoration(
+        color: AppColors.bgCard,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: AppColors.border),
+      ),
+      child: const Center(child: Text('No offers found', style: AppTextStyles.bodyMedium)),
     );
   }
 }
