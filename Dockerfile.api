@@ -1,34 +1,85 @@
 FROM node:20-alpine AS base
+RUN apk add --no-cache openssl
 RUN npm i -g pnpm
-
-FROM base AS deps
 WORKDIR /app
+
+# ---------------- deps ----------------
+FROM base AS deps
+
+# Copy only package.json files to preserve Docker layer caching
+# (source changes don't re-trigger pnpm install)
 COPY pnpm-lock.yaml pnpm-workspace.yaml package.json turbo.json ./
-COPY packages/ ./packages/
-COPY apps/api/ ./apps/api/
+COPY packages/types/package.json ./packages/types/
+COPY packages/utils/package.json ./packages/utils/
+COPY packages/tsconfig/package.json ./packages/tsconfig/
+COPY packages/db/package.json ./packages/db/
+COPY packages/admin-api/package.json ./packages/admin-api/
+COPY packages/sdk/package.json ./packages/sdk/
+COPY apps/api/package.json ./apps/api/
+
+# Prisma schema + tsconfig files (config rarely changes, safe for layer cache)
+COPY packages/db/prisma ./packages/db/prisma
+COPY packages/tsconfig ./packages/tsconfig
+COPY packages/db/tsconfig.json ./packages/db/
+COPY packages/types/tsconfig.json ./packages/types/
+COPY packages/utils/tsconfig.json ./packages/utils/
+COPY packages/admin-api/tsconfig.json ./packages/admin-api/
+COPY packages/sdk/tsconfig.json ./packages/sdk/
+COPY apps/api/tsconfig.json ./apps/api/
+
 RUN pnpm install --frozen-lockfile
 
+# ---------------- build ----------------
 FROM base AS builder
-WORKDIR /app
-COPY --from=deps /app .
+COPY --from=deps /app ./
+
+COPY packages/types/src ./packages/types/src
+COPY packages/utils/src ./packages/utils/src
+COPY packages/db/src ./packages/db/src
+COPY packages/admin-api/src ./packages/admin-api/src
+COPY packages/sdk/src ./packages/sdk/src
+COPY apps/api/src ./apps/api/src
+
 RUN pnpm --filter @techia/db run db:generate
 RUN pnpm build
 
-FROM base AS runner
+# ---------------- runner ----------------
+FROM node:20-alpine AS runner
+RUN apk add --no-cache openssl
+RUN npm i -g pnpm
 WORKDIR /app
 ENV NODE_ENV=production
 
-COPY --from=deps /app/pnpm-lock.yaml /app/pnpm-workspace.yaml /app/package.json /app/turbo.json ./
-COPY --from=deps /app/packages/ ./packages/
-COPY --from=builder /app/apps/api/dist/ ./apps/api/dist/
-COPY --from=builder /app/packages/types/dist/ ./packages/types/dist/
-COPY --from=builder /app/packages/db/dist/ ./packages/db/dist/
-COPY --from=builder /app/packages/db/prisma/ ./packages/db/prisma/
-COPY --from=builder /app/packages/admin-api/dist/ ./packages/admin-api/dist/
-COPY --from=builder /app/packages/utils/dist/ ./packages/utils/dist/
+# Copy compiled dist outputs
+COPY --from=builder /app/apps/api/dist ./apps/api/dist
+COPY --from=builder /app/packages/db/dist ./packages/db/dist
+COPY --from=builder /app/packages/db/prisma ./packages/db/prisma
+COPY --from=builder /app/packages/types/dist ./packages/types/dist
+COPY --from=builder /app/packages/utils/dist ./packages/utils/dist
+COPY --from=builder /app/packages/admin-api/dist ./packages/admin-api/dist
 
-RUN pnpm install --frozen-lockfile --prod
+# Copy package.json for every workspace package (required by pnpm install --prod)
+COPY --from=builder /app/packages/db/package.json ./packages/db/
+COPY --from=builder /app/packages/types/package.json ./packages/types/
+COPY --from=builder /app/packages/utils/package.json ./packages/utils/
+COPY --from=builder /app/packages/admin-api/package.json ./packages/admin-api/
+COPY --from=builder /app/apps/api/package.json ./apps/api/
+COPY --from=builder /app/package.json ./package.json
+COPY --from=builder /app/pnpm-lock.yaml ./pnpm-lock.yaml
+COPY --from=builder /app/pnpm-workspace.yaml ./pnpm-workspace.yaml
+
+# Install only production dependencies
+RUN pnpm install --prod --frozen-lockfile
+
+# Regenerate Prisma client for the correct architecture
+RUN cd packages/db && npx prisma generate
+
+# Ensure uploads directory exists with correct permissions
+RUN mkdir -p apps/api/uploads
+RUN chown -R node:node /app
 
 USER node
 EXPOSE 4000
+
+# Start the server (migrations handled by Railway release command)
 CMD ["node", "apps/api/dist/index.js"]

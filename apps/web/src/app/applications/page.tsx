@@ -101,7 +101,9 @@ export default function ApplicationsPage() {
     try {
       await deleteApplication.mutateAsync(deleteTarget.id);
       setDeleteTarget(null);
-    } catch { }
+    } catch (err) {
+      setFormError(getErrorMessage(err));
+    }
   }
 
   const statusOptions = statusTarget ? STATUS_OPTIONS[statusTarget.status] ?? [] : [];

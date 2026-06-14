@@ -1,6 +1,7 @@
 {
   "name": "mobile",
   "version": "1.0.0",
+  "private": true,
   "scripts": {
     "dev": "cd Project && flutter run || echo \"Flutter not installed, skipping mobile\"",
     "build": "cd Project && flutter build apk || echo \"Flutter not installed, skipping mobile\"",

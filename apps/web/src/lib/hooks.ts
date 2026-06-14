@@ -1,17 +1,12 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { sdk } from "./sdk";
 import type {
-  Candidate,
   CreateCandidateDto,
   UpdateCandidateDto,
-  Offer,
   CreateOfferDto,
-  ApplicationWithRelations,
   CreateApplicationDto,
   UpdateApplicationStatusDto,
-  CommissionWithRelations,
   UpdateCommissionStatusDto,
-  DashboardStats,
 } from "@techia/types";
 
 const keys = {

@@ -33,16 +33,10 @@ const PAGE_SIZE = 20;
 
 const emptyCreate: CreateCandidateDto = { name: "", phone: "", email: "", level: "junior" };
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000";
-
-async function openCv(url: string) {
-  const token = typeof window !== "undefined" ? localStorage.getItem("auth_token") : null;
-  const res = await fetch(`${API_URL}${url}`, {
-    headers: token ? { Authorization: `Bearer ${token}` } : {},
-  });
-  if (!res.ok) return;
-  const blob = await res.blob();
-  window.open(URL.createObjectURL(blob), "_blank");
+function openCv(url: string) {
+  const baseURL = process.env.NEXT_PUBLIC_API_URL ?? "";
+  const fullUrl = url.startsWith("http") ? url : `${baseURL}${url}`;
+  window.open(fullUrl, "_blank");
 }
 
 export default function CandidatesPage() {
@@ -53,8 +47,8 @@ export default function CandidatesPage() {
   const deleteMutation = useDeleteCandidate();
   const uploadCvMutation = useUploadCv();
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [uploadingCv, setUploadingCv] = useState(false);
 
-  const candidates = data?.data ?? [];
   const total = data?.total ?? 0;
 
   const [levelFilter, setLevelFilter] = useState<CandidateLevel | "all">("all");
@@ -71,8 +65,9 @@ export default function CandidatesPage() {
   const [deleteTarget, setDeleteTarget] = useState<Candidate | null>(null);
 
   const filtered = useMemo(() => {
+    const items = data?.data ?? [];
     const term = search.trim().toLowerCase();
-    return candidates.filter((c) => {
+    return items.filter((c) => {
       const matchLevel = levelFilter === "all" || c.level === levelFilter;
       const matchSearch =
         term === "" ||
@@ -81,7 +76,7 @@ export default function CandidatesPage() {
         (c.email ?? "").toLowerCase().includes(term);
       return matchLevel && matchSearch;
     });
-  }, [candidates, levelFilter, search]);
+  }, [data, levelFilter, search]);
 
   // ── Add ──
   function openAdd() {
@@ -174,9 +169,12 @@ export default function CandidatesPage() {
 
     try {
       setEditFormError(null);
+      setUploadingCv(true);
       await uploadCvMutation.mutateAsync({ id: editTarget.id, file });
     } catch (err) {
       setEditFormError(getErrorMessage(err));
+    } finally {
+      setUploadingCv(false);
     }
 
     if (fileInputRef.current) fileInputRef.current.value = "";
@@ -348,7 +346,7 @@ export default function CandidatesPage() {
 
       {/* ── Edit Modal ── */}
       <Modal
-        open={!!editTarget && !fileInputRef.current?.value}
+        open={!!editTarget && !uploadingCv}
         onClose={() => setEditTarget(null)}
         title="Edit candidate"
         description={editTarget?.name ?? ""}

@@ -108,7 +108,8 @@ function LogoutButton() {
 
     function handleLogout() {
         localStorage.removeItem("auth_token");
-        document.cookie = "auth_token=; path=/; max-age=0; SameSite=Lax";
+        const secure = typeof window !== "undefined" && window.location.protocol === "https:" ? "; Secure" : "";
+        document.cookie = `auth_token=; path=/; max-age=0; SameSite=Lax${secure}`;
         router.replace("/login");
     }
 

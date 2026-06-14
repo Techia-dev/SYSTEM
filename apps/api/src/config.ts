@@ -9,13 +9,12 @@ const envSchema = z.object({
     JWT_SECRET: z.string().min(32),
     JWT_ACCESS_TOKEN_TTL: z.string().default("15m"),
     LOG_LEVEL: z.enum(["trace", "debug", "info", "warn", "error", "fatal"]).default("info"),
-    CORS_ORIGIN: z.string().optional(),
     CORS_ORIGINS: z.string().optional(),
 });
 
 const env = envSchema.parse(process.env);
 
-const corsOriginsRaw = env.CORS_ORIGINS ?? env.CORS_ORIGIN ?? "";
+const corsOriginsRaw = env.CORS_ORIGINS ?? "";
 
 export const config = {
     port: env.PORT,

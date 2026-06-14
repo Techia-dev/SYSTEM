@@ -4,7 +4,13 @@
   "description": "Type-safe SDK for Techia ATS API",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
-  "module": "dist/index.mjs",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "require": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
   "scripts": {
     "build": "tsc",
     "watch": "tsc --watch",
@@ -14,7 +20,7 @@
     "@techia/types": "workspace:*"
   },
   "devDependencies": {
-    "typescript": "^6.0.3"
+    "typescript": "^5.9.3"
   },
   "keywords": [
     "ats",

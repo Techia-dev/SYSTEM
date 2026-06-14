@@ -1,5 +1,0 @@
-[Workers] All event listeners registered
-[06:58:44] [32mINFO[39m: [36mServer listening at http://127.0.0.1:4000[39m
-[06:58:44] [32mINFO[39m: [36mServer listening at http://172.31.224.1:4000[39m
-[06:58:44] [32mINFO[39m: [36mServer listening at http://172.30.208.1:4000[39m
-[06:58:44] [32mINFO[39m: [36mServer listening at http://192.168.1.4:4000[39m

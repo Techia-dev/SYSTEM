@@ -38,7 +38,8 @@ export default function LoginPage() {
 
             setAuthToken(res.token);
             sdk.setAuthToken(res.token);
-            document.cookie = `auth_token=${res.token}; path=/; max-age=${60 * 60 * 24}; SameSite=Lax`;
+            const secure = window.location.protocol === "https:" ? "; Secure" : "";
+            document.cookie = `auth_token=${res.token}; path=/; max-age=${60 * 60 * 24}; SameSite=Lax${secure}`;
 
             router.replace("/");
         } catch (err) {

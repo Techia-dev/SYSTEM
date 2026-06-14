@@ -21,12 +21,12 @@
     "fastify-plugin": "^5.0.1"
   },
   "peerDependencies": {
-    "fastify": "^5.0.0",
-    "@prisma/client": "^5.0.0"
+    "@prisma/client": "^5.0.0",
+    "fastify": "^5.0.0"
   },
   "devDependencies": {
     "@types/bcryptjs": "^3.0.0",
     "fastify": "^5.8.5",
-    "typescript": "^6.0.3"
+    "typescript": "^5.9.3"
   }
 }

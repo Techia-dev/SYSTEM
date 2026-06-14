@@ -25,3 +25,10 @@ export interface MeResponse {
 export interface LogoutResponse {
     message: string;
 }
+
+export interface RegisterDto {
+    email: string;
+    password: string;
+    name?: string;
+    role?: "user" | "admin";
+}

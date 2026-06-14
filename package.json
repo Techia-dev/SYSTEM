@@ -2,26 +2,34 @@
   "name": "techia-monorepo",
   "private": true,
   "scripts": {
-    "dev": "turbo run dev  --filter=!mobile",
-     "dev:all": "turbo run dev",
-     "dev:mobile": "turbo run dev --filter=mobile",
+    "dev": "turbo run dev",
     "build": "turbo run build",
     "lint": "turbo run lint",
     "typecheck": "turbo run typecheck",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-
-    "clean": "turbo run clean"
+    "clean": "turbo run clean",
+    "test": "turbo run test",
+    "validate:env": "pnpm --filter @techia/api run validate:env"
   },
   "devDependencies": {
-"@types/node": "^25.9.1",
+    "@types/node": "^25.9.1",
     "prettier": "^3.6.2",
     "turbo": "^2.5.4",
-    "typescript": "^6.0.3"
+    "typescript": "^5.9.3"
   },
   "packageManager": "pnpm@10.22.0",
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "@prisma/client",
+      "@prisma/engines",
+      "prisma",
+      "esbuild"
+    ]
+  },
   "workspaces": [
-    "apps/*",
-    "packages/*"
+    "packages/*",
+    "apps/api",
+    "apps/web"
   ]
 }

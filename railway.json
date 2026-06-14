@@ -1,0 +1,16 @@
+{
+  "build": {
+    "builder": "DOCKERFILE",
+    "dockerfilePath": "Dockerfile.api"
+  },
+  "deploy": {
+    "numReplicas": 1,
+    "healthcheckPath": "/health",
+    "healthcheckTimeout": 60,
+    "restartPolicyType": "ON_FAILURE",
+    "restartPolicyMaxRetries": 3
+  },
+  "release": {
+    "command": "cd packages/db && npx prisma migrate deploy"
+  }
+}

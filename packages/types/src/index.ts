@@ -50,6 +50,7 @@ export type {
     UserProfile,
     MeResponse,
     LogoutResponse,
+    RegisterDto,
 } from "./auth";
 
 // Dashboard
