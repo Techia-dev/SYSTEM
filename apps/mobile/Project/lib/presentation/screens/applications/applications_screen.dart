@@ -5,6 +5,7 @@ import 'package:techia_ats/core/theme/app_colors.dart';
 import 'package:techia_ats/core/theme/app_text_styles.dart';
 import 'package:techia_ats/core/responsive/responsive.dart';
 import 'package:techia_ats/blocs/applications/applications_bloc.dart';
+import 'package:techia_ats/presentation/widgets/common/common_widgets.dart';
 
 class ApplicationsScreen extends StatefulWidget {
   const ApplicationsScreen({super.key});
@@ -57,9 +58,10 @@ class _ApplicationsScreenState extends State<ApplicationsScreen> {
                   if (state.isLoading)
                     const Center(child: CircularProgressIndicator(color: AppColors.accentEmerald))
                   else if (state.error != null)
-                    _buildError(state.error!)
+                    buildError(context, state.error!, () =>
+                        context.read<ApplicationsBloc>().add(ApplicationsLoad()))
                   else if (state.items.isEmpty)
-                    _buildEmpty()
+                    buildEmpty('No applications found')
                   else
                     _buildTable(state.items),
                 ],
@@ -72,172 +74,219 @@ class _ApplicationsScreenState extends State<ApplicationsScreen> {
   }
 
   void _showNewApplicationDialog() {
+    final formKey = GlobalKey<FormState>();
     final candidateNameCtrl = TextEditingController();
     final offerTitleCtrl = TextEditingController();
 
     showDialog(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('New application'),
-        content: SizedBox(
-          width: 360,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextField(controller: candidateNameCtrl, decoration: const InputDecoration(labelText: 'Candidate name *')),
-              const SizedBox(height: 12),
-              TextField(controller: offerTitleCtrl, decoration: const InputDecoration(labelText: 'Offer title *')),
-            ],
-          ),
-        ),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
-          ElevatedButton(
-            onPressed: () {
-              if (candidateNameCtrl.text.isEmpty || offerTitleCtrl.text.isEmpty) return;
-              context.read<ApplicationsBloc>().add(ApplicationsCreate({
-                'candidate_name': candidateNameCtrl.text,
-                'offer_title': offerTitleCtrl.text,
-              }));
-              Navigator.pop(ctx);
-            },
-            child: const Text('Add application'),
-          ),
-        ],
+      builder: (ctx) => _ApplicationDialog(
+        formKey: formKey,
+        candidateNameCtrl: candidateNameCtrl,
+        offerTitleCtrl: offerTitleCtrl,
       ),
     );
   }
 
   Widget _buildTable(List<Application> items) {
-    return Container(
-      decoration: BoxDecoration(
-        color: AppColors.bgCard,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.border),
-      ),
-      child: Column(
-        children: [
-          // Header
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-            decoration: const BoxDecoration(
-              border: Border(bottom: BorderSide(color: AppColors.border)),
-            ),
-            child: Row(
-              children: [
-                Expanded(child: Text('Candidate', style: AppTextStyles.tableHeader)),
-                Expanded(child: Text('Offer', style: AppTextStyles.tableHeader)),
+    return LayoutBuilder(
+      builder: (ctx, constraints) {
+        const double minWidth = 700;
+        final bool needsScroll = constraints.maxWidth < minWidth;
+        final Widget table = Container(
+          decoration: BoxDecoration(
+            color: AppColors.bgCard,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: AppColors.border),
+          ),
+          child: Column(
+            children: [
+              // Header
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                decoration: const BoxDecoration(
+                  border: Border(bottom: BorderSide(color: AppColors.border)),
+                ),
+                child: Row(
+                  children: [
+                Expanded(flex: 2, child: Text('Candidate', style: AppTextStyles.tableHeader)),
+                Expanded(flex: 2, child: Text('Offer', style: AppTextStyles.tableHeader)),
                 Expanded(child: Text('Status', style: AppTextStyles.tableHeader)),
                 Expanded(child: Text('Applied', style: AppTextStyles.tableHeader)),
+                  ],
+                ),
+              ),
+              // Rows
+              ListView.separated(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                itemCount: items.length,
+                separatorBuilder: (_, __) => const Divider(height: 1, color: AppColors.border),
+                itemBuilder: (_, i) {
+                  final a = items[i];
+                  return Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                      child: Row(
+                        children: [
+                          Expanded(
+                            flex: 2,
+                            child: Row(
+                              children: [
+                                Container(
+                                  width: 32,
+                                  height: 32,
+                                  decoration: BoxDecoration(
+                                    color: AppColors.bgSecondary,
+                                    borderRadius: BorderRadius.circular(6),
+                                  ),
+                                  alignment: Alignment.center,
+                                  child: Text(
+                                    a.candidateName.isNotEmpty ? a.candidateName[0].toUpperCase() : '?',
+                                    style: AppTextStyles.titleSmall.copyWith(
+                                      color: AppColors.textPrimary,
+                                      fontWeight: FontWeight.w700,
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(width: 10),
+                                Flexible(
+                                  child: Text(a.candidateName, style: AppTextStyles.titleSmall, overflow: TextOverflow.ellipsis),
+                                ),
+                              ],
+                            ),
+                          ),
+                          Expanded(
+                            flex: 2,
+                            child: Text(a.offerTitle, style: AppTextStyles.bodyMedium, overflow: TextOverflow.ellipsis),
+                          ),
+                          Expanded(child: StatusBadge(label: a.status)),
+                          Expanded(child: Text(formatDate(a.createdAt), style: AppTextStyles.bodySmall, overflow: TextOverflow.ellipsis)),
+                      ],
+                    ),
+                  );
+                },
+              ),
+            ],
+          ),
+        );
+        if (needsScroll) {
+          return SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: SizedBox(
+              width: minWidth,
+              child: table,
+            ),
+          );
+        }
+        return table;
+      },
+    );
+  }
+}
+
+class _ApplicationDialog extends StatefulWidget {
+  final GlobalKey<FormState> formKey;
+  final TextEditingController candidateNameCtrl;
+  final TextEditingController offerTitleCtrl;
+
+  const _ApplicationDialog({
+    required this.formKey,
+    required this.candidateNameCtrl,
+    required this.offerTitleCtrl,
+  });
+
+  @override
+  State<_ApplicationDialog> createState() => _ApplicationDialogState();
+}
+
+class _ApplicationDialogState extends State<_ApplicationDialog> {
+  bool _isSubmitting = false;
+  bool _didSubmit = false;
+
+  @override
+  void dispose() {
+    if (!_didSubmit) {
+      widget.candidateNameCtrl.dispose();
+      widget.offerTitleCtrl.dispose();
+    }
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return BlocListener<ApplicationsBloc, ApplicationsState>(
+      listenWhen: (prev, curr) =>
+          _didSubmit &&
+          !curr.isLoading &&
+          (curr.error != null || prev.items != curr.items),
+      listener: (context, state) {
+        _disposeAll();
+        if (state.error != null) {
+          ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+            content: Text(state.error!),
+            backgroundColor: Colors.red,
+          ));
+          setState(() { _isSubmitting = false; _didSubmit = false; });
+        } else {
+          Navigator.pop(context);
+        }
+      },
+      child: AlertDialog(
+        title: const Text('New application'),
+        content: SizedBox(
+          width: 360,
+          child: Form(
+            key: widget.formKey,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextFormField(
+                  controller: widget.candidateNameCtrl,
+                  decoration: const InputDecoration(labelText: 'Candidate name *'),
+                  validator: (v) => (v == null || v.isEmpty) ? 'Required' : null,
+                ),
+                const SizedBox(height: 12),
+                TextFormField(
+                  controller: widget.offerTitleCtrl,
+                  decoration: const InputDecoration(labelText: 'Offer title *'),
+                  validator: (v) => (v == null || v.isEmpty) ? 'Required' : null,
+                ),
               ],
             ),
           ),
-          // Rows
-          ListView.separated(
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            itemCount: items.length,
-            separatorBuilder: (_, __) => const Divider(height: 1, color: AppColors.border),
-            itemBuilder: (_, i) {
-              final a = items[i];
-              return Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: Row(
-                        children: [
-                          Container(
-                            width: 32,
-                            height: 32,
-                            decoration: BoxDecoration(
-                              color: AppColors.bgSecondary,
-                              borderRadius: BorderRadius.circular(6),
-                            ),
-                            alignment: Alignment.center,
-                            child: Text(
-                              a.candidateName.isNotEmpty ? a.candidateName[0].toUpperCase() : '?',
-                              style: AppTextStyles.titleSmall.copyWith(
-                                color: AppColors.textPrimary,
-                                fontWeight: FontWeight.w700,
-                              ),
-                            ),
-                          ),
-                          const SizedBox(width: 10),
-                          Text(a.candidateName, style: AppTextStyles.titleSmall),
-                        ],
-                      ),
-                    ),
-                    Expanded(child: Text(a.offerTitle, style: AppTextStyles.bodyMedium)),
-                    Expanded(child: _StatusBadge(a.status)),
-                    Expanded(child: Text(_formatDate(a.createdAt), style: AppTextStyles.bodySmall)),
-                  ],
-                ),
-              );
-            },
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _StatusBadge(String status) {
-    final isAccepted = status.toLowerCase() == 'accepted';
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-      decoration: BoxDecoration(
-        color: isAccepted ? AppColors.accentEmerald.withValues(alpha: 0.1) : AppColors.bgSecondary,
-        borderRadius: BorderRadius.circular(4),
-      ),
-      child: Text(
-        status[0].toUpperCase() + status.substring(1),
-        style: AppTextStyles.bodySmall.copyWith(
-          color: isAccepted ? AppColors.accentEmerald : AppColors.textSecondary,
-          fontWeight: FontWeight.w500,
-          fontSize: 11,
         ),
-      ),
-    );
-  }
-
-  String _formatDate(String dateStr) {
-    final dt = DateTime.tryParse(dateStr);
-    if (dt == null) return dateStr;
-    return '${_months[dt.month - 1]} ${dt.day}, ${dt.year}';
-  }
-
-  static const _months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-
-  Widget _buildError(String error) {
-    return Container(
-      padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        color: AppColors.bgCard,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.border),
-      ),
-      child: Column(
-        children: [
-          IconButton(
-            icon: const Icon(Icons.refresh, color: AppColors.accentEmerald),
-            onPressed: () => context.read<ApplicationsBloc>().add(ApplicationsLoad()),
+        actions: [
+          TextButton(
+            onPressed: _isSubmitting
+                ? null
+                : () {
+                    _disposeAll();
+                    Navigator.pop(context);
+                  },
+            child: const Text('Cancel'),
           ),
-          const SizedBox(height: 12),
-          Text(error, style: AppTextStyles.bodySmall.copyWith(color: AppColors.statusRejected)),
+          ElevatedButton(
+            onPressed: _isSubmitting
+                ? null
+                : () {
+                    if (!widget.formKey.currentState!.validate()) return;
+                    setState(() { _isSubmitting = true; _didSubmit = true; });
+                    context.read<ApplicationsBloc>().add(ApplicationsCreate({
+                      'candidate_name': widget.candidateNameCtrl.text,
+                      'offer_title': widget.offerTitleCtrl.text,
+                    }));
+                  },
+            child: _isSubmitting
+                ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2))
+                : const Text('Add application'),
+          ),
         ],
       ),
     );
   }
 
-  Widget _buildEmpty() {
-    return Container(
-      padding: const EdgeInsets.all(40),
-      decoration: BoxDecoration(
-        color: AppColors.bgCard,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.border),
-      ),
-      child: const Center(child: Text('No applications found', style: AppTextStyles.bodyMedium)),
-    );
+  void _disposeAll() {
+    widget.candidateNameCtrl.dispose();
+    widget.offerTitleCtrl.dispose();
   }
 }

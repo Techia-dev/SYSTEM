@@ -4,36 +4,59 @@ import 'package:techia_sdk/techia_sdk.dart';
 import 'package:techia_ats/core/theme/app_colors.dart';
 import 'package:techia_ats/core/theme/app_text_styles.dart';
 import 'package:techia_ats/blocs/candidates/candidates_bloc.dart';
+import 'package:techia_ats/presentation/widgets/common/common_widgets.dart';
 
 class CandidatesTable extends StatelessWidget {
   const CandidatesTable({super.key});
+
+  static final _levelMenuItems = ['Junior', 'Mid', 'Senior']
+      .map((s) => DropdownMenuItem(value: s, child: Text(s)))
+      .toList(growable: false);
 
   @override
   Widget build(BuildContext context) {
     return BlocBuilder<CandidatesBloc, CandidatesState>(
       builder: (context, state) {
         if (state.isLoading && state.items.isEmpty) {
-          return const Center(child: CircularProgressIndicator(color: AppColors.accentEmerald));
+          return const Center(
+              child: CircularProgressIndicator(color: AppColors.accentEmerald));
         }
         if (state.error != null && state.items.isEmpty) {
-          return _buildError(context, state.error!);
+          return buildError(context, state.error!,
+              () => context.read<CandidatesBloc>().add(CandidatesLoad()));
         }
         if (state.items.isEmpty) {
-          return _buildEmpty();
+          return buildEmpty('No candidates found');
         }
 
-        return Container(
-          decoration: BoxDecoration(
-            color: AppColors.bgCard,
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: AppColors.border),
-          ),
-          child: Column(
-            children: [
-              _buildHeader(state),
-              _buildTable(context, state),
-            ],
-          ),
+        return LayoutBuilder(
+          builder: (ctx, constraints) {
+            const double minWidth = 900;
+            final bool needsScroll = constraints.maxWidth < minWidth;
+            final Widget table = Container(
+              decoration: BoxDecoration(
+                color: AppColors.bgCard,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: AppColors.border),
+              ),
+              child: Column(
+                children: [
+                  _buildHeader(state),
+                  _buildTable(context, state),
+                ],
+              ),
+            );
+            if (needsScroll) {
+              return SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: SizedBox(
+                  width: minWidth,
+                  child: table,
+                ),
+              );
+            }
+            return table;
+          },
         );
       },
     );
@@ -52,7 +75,8 @@ class CandidatesTable extends StatelessWidget {
           const SizedBox(width: 8),
           Expanded(child: Text('Phone', style: AppTextStyles.tableHeader)),
           Expanded(child: Text('Level', style: AppTextStyles.tableHeader)),
-          Expanded(child: Text('Qualification', style: AppTextStyles.tableHeader)),
+          Expanded(
+              child: Text('Qualification', style: AppTextStyles.tableHeader)),
           Expanded(child: Text('Experience', style: AppTextStyles.tableHeader)),
           Expanded(child: Text('CV', style: AppTextStyles.tableHeader)),
           Expanded(child: Text('Joined', style: AppTextStyles.tableHeader)),
@@ -67,14 +91,16 @@ class CandidatesTable extends StatelessWidget {
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
       itemCount: state.items.length,
-      separatorBuilder: (_, __) => const Divider(height: 1, color: AppColors.border),
+      separatorBuilder: (_, __) =>
+          const Divider(height: 1, color: AppColors.border),
       itemBuilder: (context, index) {
         final c = state.items[index];
         final isSelected = state.selected?.id == c.id;
         return Container(
           color: isSelected ? AppColors.bgSecondary : null,
           child: InkWell(
-            onTap: () => context.read<CandidatesBloc>().add(CandidatesSelect(c)),
+            onTap: () =>
+                context.read<CandidatesBloc>().add(CandidatesSelect(c)),
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
               child: Row(
@@ -109,13 +135,15 @@ class CandidatesTable extends StatelessWidget {
                   ),
                   // Phone
                   Expanded(
-                    child: Text(c.displayPhone, style: AppTextStyles.bodyMedium),
+                    child:
+                        Text(c.displayPhone, style: AppTextStyles.bodyMedium),
                   ),
                   // Level
                   Expanded(
                     child: Text(
                       c.level.isEmpty ? '—' : c.level,
-                      style: AppTextStyles.bodyMedium.copyWith(color: AppColors.textPrimary),
+                      style: AppTextStyles.bodyMedium
+                          .copyWith(color: AppColors.textPrimary),
                     ),
                   ),
                   // Qualification (not in model, show dash)
@@ -132,18 +160,24 @@ class CandidatesTable extends StatelessWidget {
                   ),
                   // Joined
                   Expanded(
-                    child: Text(_formatDate(c.createdAt), style: AppTextStyles.bodySmall),
+                    child: Text(formatDate(c.createdAt),
+                        style: AppTextStyles.bodySmall),
                   ),
                   // Actions
                   SizedBox(
                     width: 160,
                     child: Row(
                       children: [
-                        _ActionButton(label: 'Edit', onTap: () => _editCandidate(context, c)),
+                        _ActionButton(
+                            label: 'Edit',
+                            onTap: () => _editCandidate(context, c)),
                         const SizedBox(width: 4),
                         _ActionButton(label: 'CV', onTap: () {}),
                         const SizedBox(width: 4),
-                        _ActionButton(label: 'Delete', onTap: () => _deleteCandidate(context, c), destructive: true),
+                        _ActionButton(
+                            label: 'Delete',
+                            onTap: () => _deleteCandidate(context, c),
+                            destructive: true),
                       ],
                     ),
                   ),
@@ -173,16 +207,22 @@ class CandidatesTable extends StatelessWidget {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  TextField(controller: nameCtrl, decoration: const InputDecoration(labelText: 'Name')),
+                  TextField(
+                      controller: nameCtrl,
+                      decoration: const InputDecoration(labelText: 'Name')),
                   const SizedBox(height: 12),
-                  TextField(controller: phoneCtrl, decoration: const InputDecoration(labelText: 'Phone')),
+                  TextField(
+                      controller: phoneCtrl,
+                      decoration: const InputDecoration(labelText: 'Phone')),
                   const SizedBox(height: 12),
-                  TextField(controller: emailCtrl, decoration: const InputDecoration(labelText: 'Email')),
+                  TextField(
+                      controller: emailCtrl,
+                      decoration: const InputDecoration(labelText: 'Email')),
                   const SizedBox(height: 12),
                   DropdownButtonFormField<String>(
                     initialValue: level,
                     decoration: const InputDecoration(labelText: 'Level'),
-                    items: ['Junior', 'Mid', 'Senior'].map((s) => DropdownMenuItem(value: s, child: Text(s))).toList(),
+                    items: _levelMenuItems,
                     onChanged: (v) => setState(() => level = v!),
                   ),
                 ],
@@ -190,15 +230,17 @@ class CandidatesTable extends StatelessWidget {
             ),
           ),
           actions: [
-            TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
+            TextButton(
+                onPressed: () => Navigator.pop(ctx),
+                child: const Text('Cancel')),
             ElevatedButton(
               onPressed: () {
                 context.read<CandidatesBloc>().add(CandidatesUpdate(c.id, {
-                  'name': nameCtrl.text,
-                  'phone': phoneCtrl.text,
-                  'email': emailCtrl.text,
-                  'level': level,
-                }));
+                      'name': nameCtrl.text,
+                      'phone': phoneCtrl.text,
+                      'email': emailCtrl.text,
+                      'level': level.toLowerCase(),
+                    }));
                 Navigator.pop(ctx);
               },
               child: const Text('Save'),
@@ -216,58 +258,19 @@ class CandidatesTable extends StatelessWidget {
         title: const Text('Delete candidate'),
         content: Text('Are you sure you want to delete ${c.name}?'),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
+          TextButton(
+              onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
           ElevatedButton(
             onPressed: () {
               context.read<CandidatesBloc>().add(CandidatesDelete(c.id));
               Navigator.pop(ctx);
             },
-            style: ElevatedButton.styleFrom(backgroundColor: AppColors.statusRejected),
+            style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.statusRejected),
             child: const Text('Delete'),
           ),
         ],
       ),
-    );
-  }
-
-  String _formatDate(String dateStr) {
-    final dt = DateTime.tryParse(dateStr);
-    if (dt == null) return dateStr;
-    return '${_months[dt.month - 1]} ${dt.day}, ${dt.year}';
-  }
-
-  static const _months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-
-  Widget _buildError(BuildContext context, String error) {
-    return Container(
-      padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        color: AppColors.bgCard,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.border),
-      ),
-      child: Column(
-        children: [
-          IconButton(
-            icon: const Icon(Icons.refresh, color: AppColors.accentEmerald),
-            onPressed: () => context.read<CandidatesBloc>().add(CandidatesLoad()),
-          ),
-          const SizedBox(height: 12),
-          Text(error, style: AppTextStyles.bodySmall.copyWith(color: AppColors.statusRejected)),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildEmpty() {
-    return Container(
-      padding: const EdgeInsets.all(40),
-      decoration: BoxDecoration(
-        color: AppColors.bgCard,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.border),
-      ),
-      child: const Center(child: Text('No candidates found', style: AppTextStyles.bodyMedium)),
     );
   }
 }
@@ -291,13 +294,18 @@ class _ActionButton extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
         decoration: BoxDecoration(
-          border: Border.all(color: destructive ? AppColors.statusRejected.withValues(alpha: 0.3) : AppColors.border),
+          border: Border.all(
+              color: destructive
+                  ? AppColors.statusRejected.withValues(alpha: 0.3)
+                  : AppColors.border),
           borderRadius: BorderRadius.circular(4),
         ),
         child: Text(
           label,
           style: AppTextStyles.bodySmall.copyWith(
-            color: destructive ? AppColors.statusRejected : AppColors.textSecondary,
+            color: destructive
+                ? AppColors.statusRejected
+                : AppColors.textSecondary,
             fontSize: 11,
           ),
         ),

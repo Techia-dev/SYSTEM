@@ -8,7 +8,7 @@ class Breakpoints {
 enum ScreenSize { mobile, tablet, desktop }
 
 ScreenSize getScreenSize(BuildContext context) {
-  final w = MediaQuery.of(context).size.width;
+  final w = MediaQuery.sizeOf(context).width;
   if (w < Breakpoints.mobile) return ScreenSize.mobile;
   if (w < Breakpoints.tablet) return ScreenSize.tablet;
   return ScreenSize.desktop;

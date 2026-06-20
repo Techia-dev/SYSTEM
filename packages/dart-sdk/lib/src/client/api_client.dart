@@ -15,6 +15,10 @@ class ApiClient {
   final http.Client _client;
   String? _authToken;
 
+  /// Called when a 401 response is received (token expired/invalid).
+  /// The AuthBloc sets this to trigger automatic logout.
+  static void Function()? onUnauthorized;
+
   ApiClient({required this.baseUrl, http.Client? client})
       : _client = client ?? http.Client();
 
@@ -120,6 +124,8 @@ class ApiClient {
       }
       return body;
     } else if (response.statusCode == 401) {
+      clearToken();
+      onUnauthorized?.call();
       throw ApiException('Unauthorized. Please sign in again.', statusCode: 401);
     } else if (response.statusCode == 403) {
       throw ApiException('Access forbidden.', statusCode: 403);

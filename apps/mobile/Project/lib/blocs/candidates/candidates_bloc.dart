@@ -73,6 +73,7 @@ class CandidatesState {
   final int appliedCount;
   final int interviewCount;
   final int hiredCount;
+  final int rejectedCount;
 
   CandidatesState({
     this.items = const [],
@@ -89,6 +90,7 @@ class CandidatesState {
     this.appliedCount = 0,
     this.interviewCount = 0,
     this.hiredCount = 0,
+    this.rejectedCount = 0,
   });
 
   CandidatesState copyWith({
@@ -106,6 +108,7 @@ class CandidatesState {
     int? appliedCount,
     int? interviewCount,
     int? hiredCount,
+    int? rejectedCount,
     bool clearError = false,
   }) {
     return CandidatesState(
@@ -123,6 +126,7 @@ class CandidatesState {
       appliedCount: appliedCount ?? this.appliedCount,
       interviewCount: interviewCount ?? this.interviewCount,
       hiredCount: hiredCount ?? this.hiredCount,
+      rejectedCount: rejectedCount ?? this.rejectedCount,
     );
   }
 
@@ -176,6 +180,7 @@ class CandidatesBloc extends Bloc<CandidatesEvent, CandidatesState> {
         appliedCount: all.where((c) => c.status == AppConstants.stageApplied).length,
         interviewCount: all.where((c) => c.status == AppConstants.stageInterview).length,
         hiredCount: all.where((c) => c.status == AppConstants.stageHired).length,
+        rejectedCount: all.where((c) => c.status == 'rejected').length,
       ));
     } catch (e) {
       emit(state.copyWith(

@@ -29,8 +29,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final isDesktop = MediaQuery.of(context).size.width >= 1024;
-
     return Scaffold(
       backgroundColor: AppColors.bgPrimary,
       body: SafeArea(
@@ -43,7 +41,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
               const SizedBox(height: 6),
               const SectionChip(label: 'Dashboard'),
               const SizedBox(height: 24),
-              _buildStatsGrid(isDesktop),
+              _buildStatsGrid(),
               const SizedBox(height: 24),
               const MonthlyOverviewChart(),
             ],
@@ -53,73 +51,79 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
-  Widget _buildStatsGrid(bool isDesktop) {
-    return BlocBuilder<CandidatesBloc, CandidatesState>(
-      builder: (context, candidatesState) {
-        return BlocBuilder<OffersBloc, OffersState>(
-          builder: (context, offersState) {
-            return BlocBuilder<CommissionsBloc, CommissionsState>(
-              builder: (context, commissionsState) {
-                final totalPaid = commissionsState.items
-                    .where((c) => c.isPaid)
-                    .fold<double>(0, (sum, c) => sum + c.amount);
-                final acceptedHired = candidatesState.hiredCount;
-                final rejected = candidatesState.items
-                    .where((c) => c.status == 'rejected')
-                    .length;
-                final activeOffers = offersState.items
-                    .where((o) => o.isActive)
-                    .length;
+  Widget _buildStatsGrid() {
+    final totalCandidates = context.select<CandidatesBloc, int>((b) => b.state.totalCount);
+    final acceptedHired = context.select<CandidatesBloc, int>((b) => b.state.hiredCount);
+    final rejected = context.select<CandidatesBloc, int>((b) => b.state.rejectedCount);
+    final totalPaid = context.select<CommissionsBloc, double>((b) =>
+        b.state.items.where((c) => c.isPaid).fold<double>(0, (sum, c) => sum + c.amount));
+    final activeOffers = context.select<OffersBloc, int>((b) =>
+        b.state.items.where((o) => o.isActive).length);
 
-                final cards = [
-                  DashboardStatCard(
-                    label: 'Collected Commissions',
-                    value: '${totalPaid.toStringAsFixed(0)} EGP',
-                    subtitle: 'Total paid out',
-                  ),
-                  DashboardStatCard(
-                    label: 'Accepted',
-                    value: '$acceptedHired',
-                    subtitle: 'Candidates hired',
-                  ),
-                  DashboardStatCard(
-                    label: 'Rejected',
-                    value: '$rejected',
-                    subtitle: 'Candidates declined',
-                  ),
-                  DashboardStatCard(
-                    label: 'Active Offers',
-                    value: '$activeOffers',
-                    subtitle: 'Currently hiring',
-                  ),
-                ];
+    final cards = [
+      DashboardStatCard(
+        label: 'Total Candidates',
+        value: '$totalCandidates',
+        subtitle: 'All registered candidates',
+      ),
+      DashboardStatCard(
+        label: 'Collected Commissions',
+        value: '${totalPaid.toStringAsFixed(0)} EGP',
+        subtitle: 'Total paid out',
+      ),
+      DashboardStatCard(
+        label: 'Accepted',
+        value: '$acceptedHired',
+        subtitle: 'Candidates hired',
+      ),
+      DashboardStatCard(
+        label: 'Rejected',
+        value: '$rejected',
+        subtitle: 'Candidates declined',
+      ),
+      DashboardStatCard(
+        label: 'Active Offers',
+        value: '$activeOffers',
+        subtitle: 'Currently hiring',
+      ),
+    ];
 
-                if (isDesktop) {
-                  return Row(
-                    children: List.generate(cards.length, (i) {
-                      return Expanded(
-                        child: Padding(
-                          padding: EdgeInsets.only(right: i < cards.length - 1 ? 12 : 0),
-                          child: cards[i],
-                        ),
-                      );
-                    }),
-                  );
-                }
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        if (constraints.maxWidth >= 750) {
+          return Row(
+            children: List.generate(cards.length, (i) {
+              return Expanded(
+                child: Padding(
+                  padding: EdgeInsets.only(right: i < cards.length - 1 ? 12 : 0),
+                  child: cards[i],
+                ),
+              );
+            }),
+          );
+        }
 
-                return GridView.count(
-                  crossAxisCount: 2,
-                  shrinkWrap: true,
-                  physics: const NeverScrollableScrollPhysics(),
-                  mainAxisSpacing: 12,
-                  crossAxisSpacing: 12,
-                  childAspectRatio: 1.6,
-                  children: cards,
-                );
-              },
-            );
-          },
+        if (constraints.maxWidth >= 450) {
+          return GridView.count(
+            crossAxisCount: 2,
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            mainAxisSpacing: 12,
+            crossAxisSpacing: 12,
+            childAspectRatio: 1.6,
+            children: cards,
+          );
+        }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: List.generate(cards.length, (i) {
+        return Padding(
+          padding: EdgeInsets.only(bottom: i < cards.length - 1 ? 12 : 0),
+          child: cards[i],
         );
+      }),
+    );
       },
     );
   }

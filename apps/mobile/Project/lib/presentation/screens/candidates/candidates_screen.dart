@@ -5,6 +5,7 @@ import 'package:techia_ats/core/theme/app_text_styles.dart';
 import 'package:techia_ats/core/responsive/responsive.dart';
 import 'package:techia_ats/blocs/candidates/candidates_bloc.dart';
 import 'package:techia_ats/presentation/widgets/candidates/candidates_table.dart';
+import 'add_candidate_screen.dart';
 
 class CandidatesScreen extends StatefulWidget {
   const CandidatesScreen({super.key});
@@ -17,6 +18,11 @@ class _CandidatesScreenState extends State<CandidatesScreen> {
   final _searchController = TextEditingController();
   String _selectedLevel = 'All levels';
 
+  static const _levelItems = ['All levels', 'Junior', 'Mid', 'Senior'];
+  static final _levelMenuItems = _levelItems.map((s) =>
+    DropdownMenuItem(value: s, child: Text(s, style: AppTextStyles.bodySmall))
+  ).toList(growable: false);
+
   @override
   void initState() {
     super.initState();
@@ -25,57 +31,10 @@ class _CandidatesScreenState extends State<CandidatesScreen> {
     }    );
   }
 
-  void _showNewCandidateDialog() {
-    final nameCtrl = TextEditingController();
-    final phoneCtrl = TextEditingController();
-    final emailCtrl = TextEditingController();
-    String level = 'Junior';
-
-    showDialog(
-      context: context,
-      builder: (ctx) => StatefulBuilder(
-        builder: (ctx, setState) => AlertDialog(
-          title: const Text('New candidate'),
-          content: SizedBox(
-            width: 360,
-            child: SingleChildScrollView(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  TextField(controller: nameCtrl, decoration: const InputDecoration(labelText: 'Name *')),
-                  const SizedBox(height: 12),
-                  TextField(controller: phoneCtrl, decoration: const InputDecoration(labelText: 'Phone *')),
-                  const SizedBox(height: 12),
-                  TextField(controller: emailCtrl, decoration: const InputDecoration(labelText: 'Email')),
-                  const SizedBox(height: 12),
-                  DropdownButtonFormField<String>(
-                    initialValue: level,
-                    decoration: const InputDecoration(labelText: 'Level'),
-                    items: ['Junior', 'Mid', 'Senior'].map((s) => DropdownMenuItem(value: s, child: Text(s))).toList(),
-                    onChanged: (v) => setState(() => level = v!),
-                  ),
-                ],
-              ),
-            ),
-          ),
-          actions: [
-            TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
-            ElevatedButton(
-              onPressed: () {
-                if (nameCtrl.text.isEmpty || phoneCtrl.text.isEmpty) return;
-                context.read<CandidatesBloc>().add(CandidatesCreate({
-                  'name': nameCtrl.text,
-                  'phone': phoneCtrl.text,
-                  'email': emailCtrl.text,
-                  'level': level,
-                }));
-                Navigator.pop(ctx);
-              },
-              child: const Text('Add candidate'),
-            ),
-          ],
-        ),
-      ),
+  void _openAddCandidate() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => const AddCandidateScreen()),
     );
   }
 
@@ -87,7 +46,15 @@ class _CandidatesScreenState extends State<CandidatesScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
+    return BlocListener<CandidatesBloc, CandidatesState>(
+      listenWhen: (prev, curr) => curr.error != null && prev.error != curr.error && prev.lastSynced == curr.lastSynced,
+      listener: (context, state) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text(state.error!),
+          backgroundColor: Colors.red,
+        ));
+      },
+      child: Scaffold(
       backgroundColor: AppColors.bgPrimary,
       body: SafeArea(
         child: SingleChildScrollView(
@@ -113,7 +80,7 @@ class _CandidatesScreenState extends State<CandidatesScreen> {
                     ),
                   ),
                   ElevatedButton.icon(
-                    onPressed: () => _showNewCandidateDialog(),
+                    onPressed: _openAddCandidate,
                     icon: const Icon(Icons.add, size: 16),
                     label: const Text('New candidate'),
                     style: ElevatedButton.styleFrom(
@@ -153,7 +120,7 @@ class _CandidatesScreenState extends State<CandidatesScreen> {
                         value: _selectedLevel,
                         isExpanded: true,
                         style: AppTextStyles.bodyMedium.copyWith(color: AppColors.textPrimary),
-                        items: ['All levels', 'Junior', 'Mid', 'Senior'].map((s) => DropdownMenuItem(value: s, child: Text(s, style: AppTextStyles.bodySmall))).toList(),
+                        items: _levelMenuItems,
                         onChanged: (v) {
                           setState(() => _selectedLevel = v!);
                           context.read<CandidatesBloc>().add(
@@ -171,6 +138,7 @@ class _CandidatesScreenState extends State<CandidatesScreen> {
             ],
           ),
         ),
+      ),
       ),
     );
   }

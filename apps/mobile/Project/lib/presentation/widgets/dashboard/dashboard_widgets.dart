@@ -172,38 +172,38 @@ Widget _legendDot(Color color, String label) {
 }
 
 // Sample data matching the web app's chart shape
-final List<FlSpot> _acceptedData = [
-  const FlSpot(1, 1800),
-  const FlSpot(2, 1600),
-  const FlSpot(3, 2000),
-  const FlSpot(4, 1700),
-  const FlSpot(5, 2100),
-  const FlSpot(6, 1900),
+const List<FlSpot> _acceptedData = [
+  FlSpot(1, 1800),
+  FlSpot(2, 1600),
+  FlSpot(3, 2000),
+  FlSpot(4, 1700),
+  FlSpot(5, 2100),
+  FlSpot(6, 1900),
 ];
 
-final List<FlSpot> _rejectedData = [
-  const FlSpot(1, 400),
-  const FlSpot(2, 600),
-  const FlSpot(3, 300),
-  const FlSpot(4, 500),
-  const FlSpot(5, 700),
-  const FlSpot(6, 400),
+const List<FlSpot> _rejectedData = [
+  FlSpot(1, 400),
+  FlSpot(2, 600),
+  FlSpot(3, 300),
+  FlSpot(4, 500),
+  FlSpot(5, 700),
+  FlSpot(6, 400),
 ];
 
-final List<FlSpot> _paidData = [
-  const FlSpot(1, 1400),
-  const FlSpot(2, 1200),
-  const FlSpot(3, 1600),
-  const FlSpot(4, 1300),
-  const FlSpot(5, 1800),
-  const FlSpot(6, 1500),
+const List<FlSpot> _paidData = [
+  FlSpot(1, 1400),
+  FlSpot(2, 1200),
+  FlSpot(3, 1600),
+  FlSpot(4, 1300),
+  FlSpot(5, 1800),
+  FlSpot(6, 1500),
 ];
 
-final List<FlSpot> _pendingData = [
-  const FlSpot(1, 600),
-  const FlSpot(2, 800),
-  const FlSpot(3, 500),
-  const FlSpot(4, 700),
-  const FlSpot(5, 400),
-  const FlSpot(6, 600),
+const List<FlSpot> _pendingData = [
+  FlSpot(1, 600),
+  FlSpot(2, 800),
+  FlSpot(3, 500),
+  FlSpot(4, 700),
+  FlSpot(5, 400),
+  FlSpot(6, 600),
 ];
