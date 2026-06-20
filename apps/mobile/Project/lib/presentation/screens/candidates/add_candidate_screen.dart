@@ -47,7 +47,7 @@ class _AddCandidateScreenState extends State<AddCandidateScreen> {
     DropdownMenuItem(value: c.$1, child: Text('${c.$2}', style: AppTextStyles.bodySmall))
   ).toList(growable: false);
 
-  static const _levelItems = ['Junior', 'Mid', 'Senior'];
+  static const _levelItems = ['Junior', 'Mid', 'Senior', 'Lead'];
   static final _levelMenuItems = _levelItems.map((s) =>
     DropdownMenuItem(value: s, child: Text(s, style: AppTextStyles.bodyMedium))
   ).toList(growable: false);

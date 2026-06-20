@@ -77,77 +77,74 @@ class _CommissionsScreenState extends State<CommissionsScreen> {
   }
 
   Widget _buildTable(List<Commission> items) {
-    return LayoutBuilder(
-      builder: (ctx, constraints) {
-        const double minWidth = 750;
-        final bool needsScroll = constraints.maxWidth < minWidth;
-        final Widget table = Container(
+    return ListView.separated(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      itemCount: items.length,
+      separatorBuilder: (_, __) => const SizedBox(height: 8),
+      itemBuilder: (_, i) {
+        final c = items[i];
+        return Container(
           decoration: BoxDecoration(
             color: AppColors.bgCard,
             borderRadius: BorderRadius.circular(12),
             border: Border.all(color: AppColors.border),
           ),
-          child: Column(
+          child: ExpansionTile(
+            tilePadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+            childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+            leading: Container(
+              width: 40,
+              height: 40,
+              decoration: BoxDecoration(
+                color: AppColors.chartPaid.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              alignment: Alignment.center,
+              child: Text(
+                c.candidateName.isNotEmpty ? c.candidateName[0].toUpperCase() : '?',
+                style: AppTextStyles.titleSmall.copyWith(
+                  color: AppColors.chartPaid,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ),
+            title: Text(c.candidateName, style: AppTextStyles.titleSmall),
+            subtitle: Row(
+              children: [
+                Text('${c.amount.toStringAsFixed(0)} EGP', style: AppTextStyles.bodySmall),
+                const SizedBox(width: 8),
+                StatusBadge(label: c.status),
+              ],
+            ),
             children: [
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                decoration: const BoxDecoration(
-                  border: Border(bottom: BorderSide(color: AppColors.border)),
-                ),
-                child: Row(
-                  children: [
-                    Expanded(child: Text('Candidate', style: AppTextStyles.tableHeader)),
-                    Expanded(child: Text('Offer', style: AppTextStyles.tableHeader)),
-                    Expanded(child: Text('Amount', style: AppTextStyles.tableHeader)),
-                    Expanded(child: Text('Status', style: AppTextStyles.tableHeader)),
-                    Expanded(child: Text('Due date', style: AppTextStyles.tableHeader)),
-                    Expanded(child: Text('Earned', style: AppTextStyles.tableHeader)),
-                  ],
-                ),
-              ),
-              ListView.separated(
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                itemCount: items.length,
-                separatorBuilder: (_, __) => const Divider(height: 1, color: AppColors.border),
-                itemBuilder: (_, i) {
-                  final c = items[i];
-                  return Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                    child: Row(
-                      children: [
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(c.candidateName, style: AppTextStyles.titleSmall),
-                            ],
-                          ),
-                        ),
-                        Expanded(child: Text(c.offerTitle, style: AppTextStyles.bodyMedium)),
-                        Expanded(child: Text('\EGP ${c.amount.toStringAsFixed(0)}', style: AppTextStyles.bodyMedium)),
-                        Expanded(child: StatusBadge(label: c.status)),
-                        Expanded(child: Text(formatDate(c.dueDate), style: AppTextStyles.bodySmall)),
-                        Expanded(child: Text(formatDate(c.earnedAt), style: AppTextStyles.bodySmall)),
-                      ],
-                    ),
-                  );
-                },
-              ),
+              _detailRow(Icons.work_outline, 'Offer', c.offerTitle),
+              _detailRow(Icons.attach_money, 'Amount', '${c.amount.toStringAsFixed(0)} EGP'),
+              _detailRow(Icons.calendar_today, 'Due date', formatDate(c.dueDate)),
+              _detailRow(Icons.check_circle_outline, 'Earned', formatDate(c.earnedAt)),
             ],
           ),
         );
-        if (needsScroll) {
-          return SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            child: SizedBox(
-              width: minWidth,
-              child: table,
-            ),
-          );
-        }
-        return table;
       },
+    );
+  }
+
+  Widget _detailRow(IconData icon, String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 6),
+      child: Row(
+        children: [
+          Icon(icon, size: 16, color: AppColors.textMuted),
+          const SizedBox(width: 10),
+          SizedBox(
+            width: 100,
+            child: Text(label, style: AppTextStyles.bodySmall.copyWith(color: AppColors.textMuted)),
+          ),
+          Expanded(
+            child: Text(value, style: AppTextStyles.bodyMedium),
+          ),
+        ],
+      ),
     );
   }
 

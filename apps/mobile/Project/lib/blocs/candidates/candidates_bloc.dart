@@ -56,6 +56,12 @@ final class CandidatesDelete extends CandidatesEvent {
   CandidatesDelete(this.id);
 }
 
+final class CandidatesUploadCv extends CandidatesEvent {
+  final String id;
+  final String filePath;
+  CandidatesUploadCv(this.id, this.filePath);
+}
+
 final class CandidatesClearError extends CandidatesEvent {}
 
 class CandidatesState {
@@ -152,6 +158,7 @@ class CandidatesBloc extends Bloc<CandidatesEvent, CandidatesState> {
     on<CandidatesCreate>(_onCreate);
     on<CandidatesUpdate>(_onUpdate);
     on<CandidatesDelete>(_onDelete);
+    on<CandidatesUploadCv>(_onUploadCv);
     on<CandidatesClearError>(_onClearError);
   }
 
@@ -179,7 +186,7 @@ class CandidatesBloc extends Bloc<CandidatesEvent, CandidatesState> {
         totalCount: all.length,
         appliedCount: all.where((c) => c.status == AppConstants.stageApplied).length,
         interviewCount: all.where((c) => c.status == AppConstants.stageInterview).length,
-        hiredCount: all.where((c) => c.status == AppConstants.stageHired).length,
+        hiredCount: all.where((c) => c.status == AppConstants.stageHired || c.status == 'accepted').length,
         rejectedCount: all.where((c) => c.status == 'rejected').length,
       ));
     } catch (e) {
@@ -265,6 +272,19 @@ class CandidatesBloc extends Bloc<CandidatesEvent, CandidatesState> {
         selected: state.selected?.id == event.id ? null : state.selected,
       ));
       add(CandidatesLoad());
+    } catch (e) {
+      emit(state.copyWith(error: e.toString().replaceAll('ApiException: ', '')));
+    }
+  }
+
+  Future<void> _onUploadCv(CandidatesUploadCv event, Emitter<CandidatesState> emit) async {
+    try {
+      final updated = await _repository.uploadCv(event.id, event.filePath);
+      final items = state.items.map((c) => c.id == event.id ? updated : c).toList();
+      emit(state.copyWith(
+        items: items,
+        selected: state.selected?.id == event.id ? updated : state.selected,
+      ));
     } catch (e) {
       emit(state.copyWith(error: e.toString().replaceAll('ApiException: ', '')));
     }

@@ -60,7 +60,10 @@ class StatusBadge extends StatelessWidget {
     switch (label.toLowerCase()) {
       case 'applied':
         return AppColors.bgSecondary;
+      case 'interview':
+        return AppColors.levelMid.withValues(alpha: 0.1);
       case 'accepted':
+      case 'hired':
         return AppColors.accentEmerald.withValues(alpha: 0.1);
       case 'rejected':
         return AppColors.statusRejected.withValues(alpha: 0.1);
@@ -80,7 +83,10 @@ class StatusBadge extends StatelessWidget {
     switch (label.toLowerCase()) {
       case 'applied':
         return AppColors.textSecondary;
+      case 'interview':
+        return AppColors.levelMid;
       case 'accepted':
+      case 'hired':
         return AppColors.accentEmerald;
       case 'rejected':
         return AppColors.statusRejected;
@@ -110,6 +116,33 @@ class StatusBadge extends StatelessWidget {
           fontWeight: FontWeight.w500,
           fontSize: 11,
         ),
+      ),
+    );
+  }
+}
+
+class LevelBadge extends StatelessWidget {
+  final String level;
+
+  const LevelBadge({super.key, required this.level});
+
+  Color get _color {
+    switch (level.toLowerCase()) {
+      case 'junior': return AppColors.levelJunior;
+      case 'mid': return AppColors.levelMid;
+      case 'senior': return AppColors.levelSenior;
+      case 'lead': return AppColors.levelLead;
+      default: return AppColors.textSecondary;
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Text(
+      level.isEmpty ? '—' : level[0].toUpperCase() + level.substring(1),
+      style: AppTextStyles.bodyMedium.copyWith(
+        color: _color,
+        fontWeight: FontWeight.w600,
       ),
     );
   }

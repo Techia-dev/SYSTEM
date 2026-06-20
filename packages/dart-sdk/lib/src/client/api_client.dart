@@ -114,6 +114,24 @@ class ApiClient {
     }
   }
 
+  Future<dynamic> uploadFile(String path, String filePath) async {
+    try {
+      final uri = _buildUri(path);
+      final request = http.MultipartRequest('POST', uri);
+      if (_authToken != null) {
+        request.headers['Authorization'] = 'Bearer $_authToken';
+      }
+      request.files.add(await http.MultipartFile.fromPath('cv', filePath));
+      final streamed = await request.send().timeout(const Duration(seconds: 60));
+      final response = await http.Response.fromStream(streamed);
+      return _handleResponse(response);
+    } on ApiException {
+      rethrow;
+    } catch (e) {
+      throw ApiException('Network error: ${e.toString()}');
+    }
+  }
+
   dynamic _handleResponse(http.Response response) {
     final body = response.body.isNotEmpty ? jsonDecode(response.body) : null;
 

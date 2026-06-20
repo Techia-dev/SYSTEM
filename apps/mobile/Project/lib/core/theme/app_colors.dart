@@ -43,4 +43,10 @@ class AppColors {
   static const Color chartRejected = Color(0xFFDC2626);
   static const Color chartPaid = Color(0xFF3B82F6);
   static const Color chartPending = Color(0xFFD97706);
+
+  // Level colors
+  static const Color levelJunior = Color(0xFF059669);
+  static const Color levelMid = Color(0xFF3B82F6);
+  static const Color levelSenior = Color(0xFFD97706);
+  static const Color levelLead = Color(0xFF7C3AED);
 }

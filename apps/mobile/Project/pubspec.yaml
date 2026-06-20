@@ -26,6 +26,9 @@ dependencies:
   # Charts
   fl_chart: ^0.69.2
 
+  # File picker
+  file_picker: ^8.0.0
+
   # Icons (optional - Flutter has Material icons built in)
   # cupertino_icons: ^1.0.8
 

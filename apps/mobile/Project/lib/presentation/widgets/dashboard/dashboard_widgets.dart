@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:techia_ats/core/theme/app_colors.dart';
 import 'package:techia_ats/core/theme/app_text_styles.dart';
+import 'package:techia_ats/blocs/candidates/candidates_bloc.dart';
+import 'package:techia_ats/blocs/commissions/commissions_bloc.dart';
 
 class DashboardStatCard extends StatelessWidget {
   final String label;
@@ -29,7 +32,8 @@ class DashboardStatCard extends StatelessWidget {
         children: [
           Text(label.toUpperCase(), style: AppTextStyles.labelLarge),
           const SizedBox(height: 8),
-          Text(value, style: AppTextStyles.displayMedium.copyWith(fontSize: 28)),
+          Text(value,
+              style: AppTextStyles.displayMedium.copyWith(fontSize: 20)),
           const SizedBox(height: 4),
           Text(subtitle, style: AppTextStyles.bodySmall),
         ],
@@ -38,11 +42,24 @@ class DashboardStatCard extends StatelessWidget {
   }
 }
 
-class MonthlyOverviewChart extends StatelessWidget {
-  const MonthlyOverviewChart({super.key});
+class CandidatesStatusChart extends StatelessWidget {
+  const CandidatesStatusChart({super.key});
 
   @override
   Widget build(BuildContext context) {
+    final accepted =
+        context.select<CandidatesBloc, int>((b) => b.state.hiredCount);
+    final rejected =
+        context.select<CandidatesBloc, int>((b) => b.state.rejectedCount);
+    final paidCommissions = context.select<CommissionsBloc, double>((b) => b
+        .state.items
+        .where((c) => c.isPaid)
+        .fold<double>(0, (sum, c) => sum + c.amount));
+    final pendingCommissions = context.select<CommissionsBloc, double>((b) => b
+        .state.items
+        .where((c) => !c.isPaid)
+        .fold<double>(0, (sum, c) => sum + c.amount));
+
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
@@ -54,70 +71,55 @@ class MonthlyOverviewChart extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text('MONTHLY OVERVIEW', style: AppTextStyles.labelLarge),
-          const SizedBox(height: 6),
           const SizedBox(height: 20),
           SizedBox(
             height: 220,
-            child: LineChart(
-              LineChartData(
-                gridData: FlGridData(
-                  show: true,
-                  drawVerticalLine: false,
-                  getDrawingHorizontalLine: (value) => FlLine(
-                    color: AppColors.border,
-                    strokeWidth: 1,
+            child: PieChart(
+              PieChartData(
+                sectionsSpace: 3,
+                centerSpaceRadius: 50,
+                sections: [
+                  PieChartSectionData(
+                    value: accepted.toDouble(),
+                    color: AppColors.chartAccepted,
+                    title: '${accepted}',
+                    radius: 45,
+                    titleStyle: const TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white),
                   ),
-                ),
-                titlesData: FlTitlesData(
-                  leftTitles: AxisTitles(
-                    sideTitles: SideTitles(
-                      showTitles: true,
-                      reservedSize: 40,
-                      getTitlesWidget: (value, meta) {
-                        if (value == 0) return const SizedBox.shrink();
-                        return Padding(
-                          padding: const EdgeInsets.only(right: 8),
-                          child: Text(
-                            '${value.toInt()}',
-                            style: AppTextStyles.bodySmall.copyWith(fontSize: 11),
-                          ),
-                        );
-                      },
-                    ),
+                  PieChartSectionData(
+                    value: rejected.toDouble(),
+                    color: AppColors.chartRejected,
+                    title: '${rejected}',
+                    radius: 45,
+                    titleStyle: const TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white),
                   ),
-                  bottomTitles: AxisTitles(
-                    sideTitles: SideTitles(
-                      showTitles: true,
-                      interval: 1,
-                      getTitlesWidget: (value, meta) {
-                        final months = ['', 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-                        final index = value.toInt();
-                        if (index < 1 || index > 12) return const SizedBox.shrink();
-                        return Padding(
-                          padding: const EdgeInsets.only(top: 8),
-                          child: Text(
-                            months[index],
-                            style: AppTextStyles.bodySmall.copyWith(fontSize: 10),
-                          ),
-                        );
-                      },
-                    ),
+                  PieChartSectionData(
+                    value: paidCommissions,
+                    color: AppColors.chartPaid,
+                    title: '${paidCommissions.toStringAsFixed(0)}',
+                    radius: 45,
+                    titleStyle: const TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white),
                   ),
-                  topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                  rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                ),
-                borderData: FlBorderData(show: false),
-                minX: 1,
-                maxX: 6,
-                minY: 0,
-                maxY: 2500,
-                lineBarsData: [
-                  _line('Accepted', AppColors.chartAccepted, _acceptedData),
-                  _line('Rejected', AppColors.chartRejected, _rejectedData),
-                  _line('Paid commissions', AppColors.chartPaid, _paidData),
-                  _line('Pending commissions', AppColors.chartPending, _pendingData),
+                  PieChartSectionData(
+                    value: pendingCommissions,
+                    color: AppColors.chartPending,
+                    title: '${pendingCommissions.toStringAsFixed(0)}',
+                    radius: 45,
+                    titleStyle: const TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white),
+                  ),
                 ],
-                lineTouchData: const LineTouchData(enabled: false),
               ),
             ),
           ),
@@ -126,28 +128,15 @@ class MonthlyOverviewChart extends StatelessWidget {
             spacing: 20,
             runSpacing: 8,
             children: [
-              _legendDot(AppColors.chartAccepted, 'Accepted'),
-              _legendDot(AppColors.chartRejected, 'Rejected'),
-              _legendDot(AppColors.chartPaid, 'Paid commissions'),
-              _legendDot(AppColors.chartPending, 'Pending commissions'),
+              _legendDot(AppColors.chartAccepted, 'Accepted ($accepted)'),
+              _legendDot(AppColors.chartRejected, 'Rejected ($rejected)'),
+              _legendDot(AppColors.chartPaid,
+                  'Paid ${paidCommissions.toStringAsFixed(0)} EGP'),
+              _legendDot(AppColors.chartPending,
+                  'Pending ${pendingCommissions.toStringAsFixed(0)} EGP'),
             ],
           ),
         ],
-      ),
-    );
-  }
-
-  LineChartBarData _line(String label, Color color, List<FlSpot> data) {
-    return LineChartBarData(
-      spots: data,
-      isCurved: true,
-      preventCurveOverShooting: true,
-      color: color,
-      barWidth: 2.5,
-      dotData: const FlDotData(show: false),
-      belowBarData: BarAreaData(
-        show: true,
-        color: color.withValues(alpha: 0.08),
       ),
     );
   }
@@ -170,40 +159,3 @@ Widget _legendDot(Color color, String label) {
     ],
   );
 }
-
-// Sample data matching the web app's chart shape
-const List<FlSpot> _acceptedData = [
-  FlSpot(1, 1800),
-  FlSpot(2, 1600),
-  FlSpot(3, 2000),
-  FlSpot(4, 1700),
-  FlSpot(5, 2100),
-  FlSpot(6, 1900),
-];
-
-const List<FlSpot> _rejectedData = [
-  FlSpot(1, 400),
-  FlSpot(2, 600),
-  FlSpot(3, 300),
-  FlSpot(4, 500),
-  FlSpot(5, 700),
-  FlSpot(6, 400),
-];
-
-const List<FlSpot> _paidData = [
-  FlSpot(1, 1400),
-  FlSpot(2, 1200),
-  FlSpot(3, 1600),
-  FlSpot(4, 1300),
-  FlSpot(5, 1800),
-  FlSpot(6, 1500),
-];
-
-const List<FlSpot> _pendingData = [
-  FlSpot(1, 600),
-  FlSpot(2, 800),
-  FlSpot(3, 500),
-  FlSpot(4, 700),
-  FlSpot(5, 400),
-  FlSpot(6, 600),
-];

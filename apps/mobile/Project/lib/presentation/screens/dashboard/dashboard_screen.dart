@@ -43,7 +43,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
               const SizedBox(height: 24),
               _buildStatsGrid(),
               const SizedBox(height: 24),
-              const MonthlyOverviewChart(),
+              const CandidatesStatusChart(),
             ],
           ),
         ),
@@ -52,78 +52,62 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   Widget _buildStatsGrid() {
-    final totalCandidates = context.select<CandidatesBloc, int>((b) => b.state.totalCount);
-    final acceptedHired = context.select<CandidatesBloc, int>((b) => b.state.hiredCount);
-    final rejected = context.select<CandidatesBloc, int>((b) => b.state.rejectedCount);
-    final totalPaid = context.select<CommissionsBloc, double>((b) =>
-        b.state.items.where((c) => c.isPaid).fold<double>(0, (sum, c) => sum + c.amount));
-    final activeOffers = context.select<OffersBloc, int>((b) =>
-        b.state.items.where((o) => o.isActive).length);
-
-    final cards = [
-      DashboardStatCard(
-        label: 'Total Candidates',
-        value: '$totalCandidates',
-        subtitle: 'All registered candidates',
-      ),
-      DashboardStatCard(
-        label: 'Collected Commissions',
-        value: '${totalPaid.toStringAsFixed(0)} EGP',
-        subtitle: 'Total paid out',
-      ),
-      DashboardStatCard(
-        label: 'Accepted',
-        value: '$acceptedHired',
-        subtitle: 'Candidates hired',
-      ),
-      DashboardStatCard(
-        label: 'Rejected',
-        value: '$rejected',
-        subtitle: 'Candidates declined',
-      ),
-      DashboardStatCard(
-        label: 'Active Offers',
-        value: '$activeOffers',
-        subtitle: 'Currently hiring',
-      ),
-    ];
+    final acceptedHired =
+        context.select<CandidatesBloc, int>((b) => b.state.hiredCount);
+    final rejected =
+        context.select<CandidatesBloc, int>((b) => b.state.rejectedCount);
+    final totalPaid = context.select<CommissionsBloc, double>((b) => b
+        .state.items
+        .where((c) => c.isPaid)
+        .fold<double>(0, (sum, c) => sum + c.amount));
+    final activeOffers = context.select<OffersBloc, int>(
+        (b) => b.state.items.where((o) => o.isActive).length);
 
     return LayoutBuilder(
       builder: (context, constraints) {
-        if (constraints.maxWidth >= 750) {
-          return Row(
-            children: List.generate(cards.length, (i) {
-              return Expanded(
-                child: Padding(
-                  padding: EdgeInsets.only(right: i < cards.length - 1 ? 12 : 0),
-                  child: cards[i],
+        final gap = constraints.maxWidth < 450 ? 8.0 : 12.0;
+
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Row(children: [
+              Expanded(
+                child: DashboardStatCard(
+                  label: 'Commissions',
+                  // ected Commissions',
+                  value: '${totalPaid.toStringAsFixed(0)} EGP',
+                  subtitle: 'Total paid out',
                 ),
-              );
-            }),
-          );
-        }
-
-        if (constraints.maxWidth >= 450) {
-          return GridView.count(
-            crossAxisCount: 2,
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            mainAxisSpacing: 12,
-            crossAxisSpacing: 12,
-            childAspectRatio: 1.6,
-            children: cards,
-          );
-        }
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: List.generate(cards.length, (i) {
-        return Padding(
-          padding: EdgeInsets.only(bottom: i < cards.length - 1 ? 12 : 0),
-          child: cards[i],
+              ),
+              SizedBox(width: gap),
+              Expanded(
+                child: DashboardStatCard(
+                  label: 'Active Offers',
+                  value: '$activeOffers',
+                  subtitle: 'Currently hiring',
+                ),
+              ),
+            ]),
+            SizedBox(height: gap),
+            Row(children: [
+              Expanded(
+                child: DashboardStatCard(
+                  label: 'Accepted',
+                  value: '$acceptedHired',
+                  subtitle: 'Candidates hired',
+                ),
+              ),
+              SizedBox(width: gap),
+              Expanded(
+                child: DashboardStatCard(
+                  label: 'Rejected',
+                  value: '$rejected',
+                  subtitle: 'Candidates declined',
+                ),
+              ),
+            ]),
+          ],
         );
-      }),
-    );
       },
     );
   }

@@ -11,8 +11,10 @@ class PipelineStageIndicator extends StatelessWidget {
     required this.currentStage,
   });
 
-  int get _activeIndex =>
-      AppConstants.pipelineStages.indexOf(currentStage.toLowerCase());
+  int get _activeIndex {
+    final s = currentStage.toLowerCase();
+    return AppConstants.pipelineStages.indexOf(s == 'accepted' ? 'hired' : s);
+  }
 
   @override
   Widget build(BuildContext context) {

@@ -5,6 +5,8 @@ import 'package:techia_ats/core/theme/app_colors.dart';
 import 'package:techia_ats/core/theme/app_text_styles.dart';
 import 'package:techia_ats/core/responsive/responsive.dart';
 import 'package:techia_ats/blocs/applications/applications_bloc.dart';
+import 'package:techia_ats/blocs/candidates/candidates_bloc.dart';
+import 'package:techia_ats/blocs/offers/offers_bloc.dart';
 import 'package:techia_ats/presentation/widgets/common/common_widgets.dart';
 
 class ApplicationsScreen extends StatefulWidget {
@@ -74,159 +76,129 @@ class _ApplicationsScreenState extends State<ApplicationsScreen> {
   }
 
   void _showNewApplicationDialog() {
-    final formKey = GlobalKey<FormState>();
-    final candidateNameCtrl = TextEditingController();
-    final offerTitleCtrl = TextEditingController();
-
-    showDialog(
-      context: context,
-      builder: (ctx) => _ApplicationDialog(
-        formKey: formKey,
-        candidateNameCtrl: candidateNameCtrl,
-        offerTitleCtrl: offerTitleCtrl,
-      ),
-    );
+    context.read<CandidatesBloc>().add(CandidatesLoad());
+    context.read<OffersBloc>().add(OffersLoad());
+    showDialog(context: context, builder: (_) => const _ApplicationDialog());
   }
 
   Widget _buildTable(List<Application> items) {
-    return LayoutBuilder(
-      builder: (ctx, constraints) {
-        const double minWidth = 700;
-        final bool needsScroll = constraints.maxWidth < minWidth;
-        final Widget table = Container(
+    return ListView.separated(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      itemCount: items.length,
+      separatorBuilder: (_, __) => const SizedBox(height: 8),
+      itemBuilder: (_, i) {
+        final a = items[i];
+        return Container(
           decoration: BoxDecoration(
             color: AppColors.bgCard,
             borderRadius: BorderRadius.circular(12),
             border: Border.all(color: AppColors.border),
           ),
-          child: Column(
+          child: ExpansionTile(
+            tilePadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+            childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+            leading: Container(
+              width: 40,
+              height: 40,
+              decoration: BoxDecoration(
+                color: AppColors.bgSecondary,
+                borderRadius: BorderRadius.circular(10),
+              ),
+              alignment: Alignment.center,
+              child: Text(
+                a.candidateName.isNotEmpty ? a.candidateName[0].toUpperCase() : '?',
+                style: AppTextStyles.titleSmall.copyWith(
+                  color: AppColors.textPrimary,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ),
+            title: Text(a.candidateName, style: AppTextStyles.titleSmall),
+            subtitle: Row(
+              children: [
+                Expanded(
+                  child: Text(a.offerTitle, style: AppTextStyles.bodySmall, overflow: TextOverflow.ellipsis),
+                ),
+                const SizedBox(width: 8),
+                StatusBadge(label: a.status),
+              ],
+            ),
             children: [
-              // Header
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                decoration: const BoxDecoration(
-                  border: Border(bottom: BorderSide(color: AppColors.border)),
-                ),
-                child: Row(
-                  children: [
-                Expanded(flex: 2, child: Text('Candidate', style: AppTextStyles.tableHeader)),
-                Expanded(flex: 2, child: Text('Offer', style: AppTextStyles.tableHeader)),
-                Expanded(child: Text('Status', style: AppTextStyles.tableHeader)),
-                Expanded(child: Text('Applied', style: AppTextStyles.tableHeader)),
-                  ],
-                ),
-              ),
-              // Rows
-              ListView.separated(
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                itemCount: items.length,
-                separatorBuilder: (_, __) => const Divider(height: 1, color: AppColors.border),
-                itemBuilder: (_, i) {
-                  final a = items[i];
-                  return Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                      child: Row(
-                        children: [
-                          Expanded(
-                            flex: 2,
-                            child: Row(
-                              children: [
-                                Container(
-                                  width: 32,
-                                  height: 32,
-                                  decoration: BoxDecoration(
-                                    color: AppColors.bgSecondary,
-                                    borderRadius: BorderRadius.circular(6),
-                                  ),
-                                  alignment: Alignment.center,
-                                  child: Text(
-                                    a.candidateName.isNotEmpty ? a.candidateName[0].toUpperCase() : '?',
-                                    style: AppTextStyles.titleSmall.copyWith(
-                                      color: AppColors.textPrimary,
-                                      fontWeight: FontWeight.w700,
-                                    ),
-                                  ),
-                                ),
-                                const SizedBox(width: 10),
-                                Flexible(
-                                  child: Text(a.candidateName, style: AppTextStyles.titleSmall, overflow: TextOverflow.ellipsis),
-                                ),
-                              ],
-                            ),
-                          ),
-                          Expanded(
-                            flex: 2,
-                            child: Text(a.offerTitle, style: AppTextStyles.bodyMedium, overflow: TextOverflow.ellipsis),
-                          ),
-                          Expanded(child: StatusBadge(label: a.status)),
-                          Expanded(child: Text(formatDate(a.createdAt), style: AppTextStyles.bodySmall, overflow: TextOverflow.ellipsis)),
-                      ],
-                    ),
-                  );
-                },
-              ),
+              _detailRow(Icons.confirmation_number, 'ID', a.id),
+              _detailRow(Icons.work_outline, 'Offer', a.offerTitle),
+              _detailRow(Icons.source, 'Source', a.source ?? '—'),
+              _detailRow(Icons.calendar_today, 'Applied', formatDate(a.createdAt)),
+              _detailRow(Icons.update, 'Updated', formatDate(a.updatedAt)),
             ],
           ),
         );
-        if (needsScroll) {
-          return SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            child: SizedBox(
-              width: minWidth,
-              child: table,
-            ),
-          );
-        }
-        return table;
       },
+    );
+  }
+
+  Widget _detailRow(IconData icon, String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 6),
+      child: Row(
+        children: [
+          Icon(icon, size: 16, color: AppColors.textMuted),
+          const SizedBox(width: 10),
+          SizedBox(
+            width: 80,
+            child: Text(label, style: AppTextStyles.bodySmall.copyWith(color: AppColors.textMuted)),
+          ),
+          Expanded(
+            child: Text(value, style: AppTextStyles.bodyMedium),
+          ),
+        ],
+      ),
     );
   }
 }
 
 class _ApplicationDialog extends StatefulWidget {
-  final GlobalKey<FormState> formKey;
-  final TextEditingController candidateNameCtrl;
-  final TextEditingController offerTitleCtrl;
-
-  const _ApplicationDialog({
-    required this.formKey,
-    required this.candidateNameCtrl,
-    required this.offerTitleCtrl,
-  });
+  const _ApplicationDialog();
 
   @override
   State<_ApplicationDialog> createState() => _ApplicationDialogState();
 }
 
 class _ApplicationDialogState extends State<_ApplicationDialog> {
+  final _formKey = GlobalKey<FormState>();
+  final _sourceCtrl = TextEditingController();
+  String? _selectedCandidateId;
+  String? _selectedOfferId;
   bool _isSubmitting = false;
   bool _didSubmit = false;
 
   @override
   void dispose() {
-    if (!_didSubmit) {
-      widget.candidateNameCtrl.dispose();
-      widget.offerTitleCtrl.dispose();
-    }
+    _sourceCtrl.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
+    final candidates = context.select<CandidatesBloc, List<Candidate>>((b) => b.state.items);
+    final offers = context.select<OffersBloc, List<Offer>>((b) => b.state.items);
+    final candidatesLoading = context.select<CandidatesBloc, bool>((b) => b.state.isLoading);
+    final offersLoading = context.select<OffersBloc, bool>((b) => b.state.isLoading);
+    final isLoading = candidatesLoading || offersLoading;
+
     return BlocListener<ApplicationsBloc, ApplicationsState>(
       listenWhen: (prev, curr) =>
           _didSubmit &&
           !curr.isLoading &&
           (curr.error != null || prev.items != curr.items),
       listener: (context, state) {
-        _disposeAll();
+        _didSubmit = false;
         if (state.error != null) {
           ScaffoldMessenger.of(context).showSnackBar(SnackBar(
             content: Text(state.error!),
             backgroundColor: Colors.red,
           ));
-          setState(() { _isSubmitting = false; _didSubmit = false; });
+          setState(() => _isSubmitting = false);
         } else {
           Navigator.pop(context);
         }
@@ -236,57 +208,91 @@ class _ApplicationDialogState extends State<_ApplicationDialog> {
         content: SizedBox(
           width: 360,
           child: Form(
-            key: widget.formKey,
+            key: _formKey,
             child: Column(
               mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                TextFormField(
-                  controller: widget.candidateNameCtrl,
-                  decoration: const InputDecoration(labelText: 'Candidate name *'),
-                  validator: (v) => (v == null || v.isEmpty) ? 'Required' : null,
-                ),
-                const SizedBox(height: 12),
-                TextFormField(
-                  controller: widget.offerTitleCtrl,
-                  decoration: const InputDecoration(labelText: 'Offer title *'),
-                  validator: (v) => (v == null || v.isEmpty) ? 'Required' : null,
-                ),
+                Text('Assign a candidate to an offer.',
+                    style: AppTextStyles.bodySmall),
+                const SizedBox(height: 20),
+                if (isLoading)
+                  const Center(
+                    child: Padding(
+                      padding: EdgeInsets.all(24),
+                      child: CircularProgressIndicator(
+                          color: AppColors.accentEmerald),
+                    ),
+                  )
+                else ...[
+                  DropdownButtonFormField<String>(
+                    initialValue: _selectedCandidateId,
+                    decoration: const InputDecoration(
+                      labelText: 'Candidate *',
+                      hintText: 'Select a candidate\u2026',
+                    ),
+                    items: candidates.map((c) => DropdownMenuItem(
+                      value: c.id,
+                      child: Text(c.name, overflow: TextOverflow.ellipsis),
+                    )).toList(growable: false),
+                    onChanged: (v) => setState(() => _selectedCandidateId = v),
+                    validator: (v) => v == null ? 'Required' : null,
+                  ),
+                  const SizedBox(height: 12),
+                  DropdownButtonFormField<String>(
+                    initialValue: _selectedOfferId,
+                    decoration: const InputDecoration(
+                      labelText: 'Offer *',
+                      hintText: 'Select an offer\u2026',
+                    ),
+                    items: offers.map((o) => DropdownMenuItem(
+                      value: o.id,
+                      child: Text(o.title, overflow: TextOverflow.ellipsis),
+                    )).toList(growable: false),
+                    onChanged: (v) => setState(() => _selectedOfferId = v),
+                    validator: (v) => v == null ? 'Required' : null,
+                  ),
+                  const SizedBox(height: 12),
+                  TextFormField(
+                    controller: _sourceCtrl,
+                    decoration: const InputDecoration(
+                      labelText: 'Source',
+                      hintText: 'LinkedIn, referral, etc.',
+                    ),
+                  ),
+                ],
               ],
             ),
           ),
         ),
         actions: [
           TextButton(
-            onPressed: _isSubmitting
-                ? null
-                : () {
-                    _disposeAll();
-                    Navigator.pop(context);
-                  },
+            onPressed:
+                _isSubmitting ? null : () => Navigator.pop(context),
             child: const Text('Cancel'),
           ),
           ElevatedButton(
-            onPressed: _isSubmitting
+            onPressed: (isLoading || _isSubmitting)
                 ? null
                 : () {
-                    if (!widget.formKey.currentState!.validate()) return;
+                    if (!_formKey.currentState!.validate()) return;
                     setState(() { _isSubmitting = true; _didSubmit = true; });
                     context.read<ApplicationsBloc>().add(ApplicationsCreate({
-                      'candidate_name': widget.candidateNameCtrl.text,
-                      'offer_title': widget.offerTitleCtrl.text,
+                      'candidateId': _selectedCandidateId,
+                      'offerId': _selectedOfferId,
+                      'source': _sourceCtrl.text,
                     }));
                   },
             child: _isSubmitting
-                ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2))
-                : const Text('Add application'),
+                ? const SizedBox(
+                    width: 16,
+                    height: 16,
+                    child:
+                        CircularProgressIndicator(strokeWidth: 2))
+                : const Text('Create application'),
           ),
         ],
       ),
     );
-  }
-
-  void _disposeAll() {
-    widget.candidateNameCtrl.dispose();
-    widget.offerTitleCtrl.dispose();
   }
 }

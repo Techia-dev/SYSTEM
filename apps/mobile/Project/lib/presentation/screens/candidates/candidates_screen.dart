@@ -18,7 +18,7 @@ class _CandidatesScreenState extends State<CandidatesScreen> {
   final _searchController = TextEditingController();
   String _selectedLevel = 'All levels';
 
-  static const _levelItems = ['All levels', 'Junior', 'Mid', 'Senior'];
+  static const _levelItems = ['All levels', 'Junior', 'Mid', 'Senior', 'Lead'];
   static final _levelMenuItems = _levelItems.map((s) =>
     DropdownMenuItem(value: s, child: Text(s, style: AppTextStyles.bodySmall))
   ).toList(growable: false);
@@ -122,9 +122,13 @@ class _CandidatesScreenState extends State<CandidatesScreen> {
                         style: AppTextStyles.bodyMedium.copyWith(color: AppColors.textPrimary),
                         items: _levelMenuItems,
                         onChanged: (v) {
-                          setState(() => _selectedLevel = v!);
+                          final selected = v;
+                          if (selected == null) return;
+                          setState(() => _selectedLevel = selected);
                           context.read<CandidatesBloc>().add(
-                            CandidatesUpdateFilter(level: v),
+                            CandidatesUpdateFilter(
+                              level: selected == 'All levels' ? 'All levels' : selected.toLowerCase(),
+                            ),
                           );
                         },
                       ),

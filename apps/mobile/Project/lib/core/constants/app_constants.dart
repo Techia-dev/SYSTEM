@@ -32,6 +32,7 @@ class AppConstants {
     'Junior',
     'Mid',
     'Senior',
+    'Lead',
   ];
 
   // Status filters
