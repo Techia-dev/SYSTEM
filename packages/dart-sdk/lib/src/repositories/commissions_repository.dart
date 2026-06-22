@@ -25,7 +25,7 @@ class CommissionsRepository {
   }
 
   Future<Commission> updateStatus(String id, String status) async {
-    final response = await _api.patch('$_basePath/$id', body: {'status': status});
+    final response = await _api.patch('$_basePath/$id/status', body: {'status': status});
     return Commission.fromJson(response as Map<String, dynamic>);
   }
 }

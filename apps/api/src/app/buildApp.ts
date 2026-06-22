@@ -18,8 +18,9 @@ import dashboardRoutes from "../routes/dashboard/dashboard.routes";
 import { authRoutes } from "@techia/admin-api";
 
 // Shared
-import { AppError, ValidationError } from "../shared/error";
+import { AppError, ValidationError, ConflictError, NotFoundError } from "../shared/error";
 import { errorResponse } from "../shared/response";
+import { Prisma } from "@prisma/client";
 import bcryptjs from "bcryptjs";
 
 // Workers
@@ -80,7 +81,35 @@ export const buildApp = () => {
                 .send(errorResponse(error.message, error.code ?? "APP_ERROR", fields));
         }
 
-        reply.status(500).send(errorResponse("Internal Server Error", "UNKNOWN_ERROR"));
+        if (error instanceof Prisma.PrismaClientKnownRequestError) {
+            if (error.code === "P2003") {
+                return reply.status(409).send(
+                    errorResponse("Cannot delete: record has related data", "CONFLICT")
+                );
+            }
+            if (error.code === "P2025") {
+                return reply.status(404).send(
+                    errorResponse("Record not found", "NOT_FOUND")
+                );
+            }
+            if (error.code === "P2002") {
+                return reply.status(409).send(
+                    errorResponse("Record already exists", "CONFLICT")
+                );
+            }
+            return reply.status(400).send(
+                errorResponse(`Database error: ${error.message}`, "DB_ERROR")
+            );
+        }
+
+        if (error instanceof Prisma.PrismaClientValidationError) {
+            return reply.status(400).send(
+                errorResponse("Invalid data provided", "VALIDATION_ERROR")
+            );
+        }
+
+        const message = error instanceof Error ? error.message : "Internal Server Error";
+        reply.status(500).send(errorResponse(message, "UNKNOWN_ERROR"));
     });
 
     // ============================================================

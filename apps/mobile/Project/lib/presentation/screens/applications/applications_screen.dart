@@ -27,58 +27,137 @@ class _ApplicationsScreenState extends State<ApplicationsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return BlocBuilder<ApplicationsBloc, ApplicationsState>(
-      builder: (context, state) {
-        return Scaffold(
-          backgroundColor: AppColors.bgPrimary,
-          body: SafeArea(
-            child: SingleChildScrollView(
-              padding: screenPadding(context),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
+    return Stack(
+      children: [
+        BlocBuilder<ApplicationsBloc, ApplicationsState>(
+          builder: (context, state) {
+            return Scaffold(
+              backgroundColor: AppColors.bgPrimary,
+              body: SafeArea(
+                child: SingleChildScrollView(
+                  padding: screenPadding(context),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text('Applications', style: AppTextStyles.headlineLarge),
-                            const SizedBox(height: 4),
-                            Text(state.matchingText, style: AppTextStyles.bodySmall),
-                          ],
-                        ),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text('Applications', style: AppTextStyles.headlineLarge),
+                                const SizedBox(height: 4),
+                                Text(state.matchingText, style: AppTextStyles.bodySmall),
+                              ],
+                            ),
+                          ),
+                          ElevatedButton.icon(
+                            onPressed: () => _showNewApplicationDialog(),
+                            icon: const Icon(Icons.add, size: 16),
+                            label: const Text('New application'),
+                          ),
+                        ],
                       ),
-                      ElevatedButton.icon(
-                        onPressed: () => _showNewApplicationDialog(),
-                        icon: const Icon(Icons.add, size: 16),
-                        label: const Text('New application'),
-                      ),
+                      const SizedBox(height: 20),
+                      if (state.isLoading && state.items.isEmpty)
+                        const Center(child: CircularProgressIndicator(color: AppColors.accentEmerald))
+                      else if (state.error != null && state.items.isEmpty)
+                        buildError(context, state.error!, () =>
+                            context.read<ApplicationsBloc>().add(ApplicationsLoad()))
+                      else if (state.items.isEmpty)
+                        buildEmpty('No applications found')
+                      else
+                        _buildTable(state.items),
                     ],
                   ),
-                  const SizedBox(height: 20),
-                  if (state.isLoading)
-                    const Center(child: CircularProgressIndicator(color: AppColors.accentEmerald))
-                  else if (state.error != null)
-                    buildError(context, state.error!, () =>
-                        context.read<ApplicationsBloc>().add(ApplicationsLoad()))
-                  else if (state.items.isEmpty)
-                    buildEmpty('No applications found')
-                  else
-                    _buildTable(state.items),
-                ],
+                ),
               ),
-            ),
-          ),
-        );
-      },
+            );
+          },
+        ),
+        BlocListener<ApplicationsBloc, ApplicationsState>(
+          listenWhen: (prev, curr) =>
+              curr.error != null &&
+              prev.error != curr.error &&
+              prev.items.isNotEmpty &&
+              prev.items == curr.items,
+          listener: (context, state) {
+            ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+              content: Text(state.error!),
+              backgroundColor: Colors.red,
+            ));
+          },
+          child: const SizedBox.shrink(),
+        ),
+      ],
     );
   }
 
   void _showNewApplicationDialog() {
     context.read<CandidatesBloc>().add(CandidatesLoad());
     context.read<OffersBloc>().add(OffersLoad());
-    showDialog(context: context, builder: (_) => const _ApplicationDialog());
+    showDialog(context: context, builder: (_) => const _CreateApplicationDialog());
+  }
+
+  bool _canUpdateStatus(String status) {
+    return status == 'applied' || status == 'interview';
+  }
+
+  void _showStatusUpdateDialog(Application a) {
+    final options = a.status == 'applied'
+        ? ['interview', 'rejected']
+        : ['accepted', 'rejected'];
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Update status'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text('Current: ${a.status[0].toUpperCase()}${a.status.substring(1)}',
+                style: AppTextStyles.bodySmall),
+            const SizedBox(height: 16),
+            ...options.map((s) => Padding(
+              padding: const EdgeInsets.only(bottom: 8),
+              child: SizedBox(
+                width: double.infinity,
+                child: OutlinedButton(
+                  onPressed: () {
+                    context.read<ApplicationsBloc>().add(ApplicationsUpdateStatus(a.id, s));
+                    Navigator.pop(ctx);
+                  },
+                  child: Text(s[0].toUpperCase() + s.substring(1)),
+                ),
+              ),
+            )),
+          ],
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
+        ],
+      ),
+    );
+  }
+
+  void _confirmDelete(Application a) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Delete application'),
+        content: Text('Are you sure you want to delete the application for ${a.candidateName}?'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
+          ElevatedButton(
+            onPressed: () {
+              context.read<ApplicationsBloc>().add(ApplicationsDelete(a.id));
+              Navigator.pop(ctx);
+            },
+            style: ElevatedButton.styleFrom(backgroundColor: AppColors.statusRejected),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
   }
 
   Widget _buildTable(List<Application> items) {
@@ -130,6 +209,31 @@ class _ApplicationsScreenState extends State<ApplicationsScreen> {
               _detailRow(Icons.source, 'Source', a.source ?? '—'),
               _detailRow(Icons.calendar_today, 'Applied', formatDate(a.createdAt)),
               _detailRow(Icons.update, 'Updated', formatDate(a.updatedAt)),
+              const SizedBox(height: 12),
+              Row(
+                children: [
+                  if (_canUpdateStatus(a.status))
+                    Expanded(
+                      child: OutlinedButton.icon(
+                        onPressed: () => _showStatusUpdateDialog(a),
+                        icon: const Icon(Icons.swap_horiz, size: 16),
+                        label: const Text('Update status'),
+                      ),
+                    ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      onPressed: () => _confirmDelete(a),
+                      icon: const Icon(Icons.delete_outline, size: 16),
+                      label: const Text('Delete'),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: AppColors.statusRejected,
+                        side: BorderSide(color: AppColors.statusRejected.withValues(alpha: 0.3)),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
             ],
           ),
         );
@@ -157,20 +261,21 @@ class _ApplicationsScreenState extends State<ApplicationsScreen> {
   }
 }
 
-class _ApplicationDialog extends StatefulWidget {
-  const _ApplicationDialog();
+class _CreateApplicationDialog extends StatefulWidget {
+  const _CreateApplicationDialog();
 
   @override
-  State<_ApplicationDialog> createState() => _ApplicationDialogState();
+  State<_CreateApplicationDialog> createState() => _CreateApplicationDialogState();
 }
 
-class _ApplicationDialogState extends State<_ApplicationDialog> {
+class _CreateApplicationDialogState extends State<_CreateApplicationDialog> {
   final _formKey = GlobalKey<FormState>();
   final _sourceCtrl = TextEditingController();
   String? _selectedCandidateId;
   String? _selectedOfferId;
   bool _isSubmitting = false;
   bool _didSubmit = false;
+  String? _errorMessage;
 
   @override
   void dispose() {
@@ -193,12 +298,9 @@ class _ApplicationDialogState extends State<_ApplicationDialog> {
           (curr.error != null || prev.items != curr.items),
       listener: (context, state) {
         _didSubmit = false;
+        setState(() => _isSubmitting = false);
         if (state.error != null) {
-          ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-            content: Text(state.error!),
-            backgroundColor: Colors.red,
-          ));
-          setState(() => _isSubmitting = false);
+          setState(() => _errorMessage = state.error);
         } else {
           Navigator.pop(context);
         }
@@ -235,7 +337,9 @@ class _ApplicationDialogState extends State<_ApplicationDialog> {
                       value: c.id,
                       child: Text(c.name, overflow: TextOverflow.ellipsis),
                     )).toList(growable: false),
-                    onChanged: (v) => setState(() => _selectedCandidateId = v),
+                    onChanged: (v) {
+                      setState(() { _selectedCandidateId = v; _errorMessage = null; });
+                    },
                     validator: (v) => v == null ? 'Required' : null,
                   ),
                   const SizedBox(height: 12),
@@ -249,7 +353,9 @@ class _ApplicationDialogState extends State<_ApplicationDialog> {
                       value: o.id,
                       child: Text(o.title, overflow: TextOverflow.ellipsis),
                     )).toList(growable: false),
-                    onChanged: (v) => setState(() => _selectedOfferId = v),
+                    onChanged: (v) {
+                      setState(() { _selectedOfferId = v; _errorMessage = null; });
+                    },
                     validator: (v) => v == null ? 'Required' : null,
                   ),
                   const SizedBox(height: 12),
@@ -258,6 +364,22 @@ class _ApplicationDialogState extends State<_ApplicationDialog> {
                     decoration: const InputDecoration(
                       labelText: 'Source',
                       hintText: 'LinkedIn, referral, etc.',
+                    ),
+                  ),
+                ],
+                if (_errorMessage != null) ...[
+                  const SizedBox(height: 12),
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: AppColors.statusRejected.withValues(alpha: 0.08),
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: AppColors.statusRejected.withValues(alpha: 0.3)),
+                    ),
+                    child: Text(
+                      _errorMessage!,
+                      style: AppTextStyles.bodySmall.copyWith(color: AppColors.statusRejected),
                     ),
                   ),
                 ],
@@ -276,7 +398,7 @@ class _ApplicationDialogState extends State<_ApplicationDialog> {
                 ? null
                 : () {
                     if (!_formKey.currentState!.validate()) return;
-                    setState(() { _isSubmitting = true; _didSubmit = true; });
+                    setState(() { _isSubmitting = true; _didSubmit = true; _errorMessage = null; });
                     context.read<ApplicationsBloc>().add(ApplicationsCreate({
                       'candidateId': _selectedCandidateId,
                       'offerId': _selectedOfferId,

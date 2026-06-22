@@ -173,7 +173,7 @@ class _OffersScreenState extends State<OffersScreen> {
                 SizedBox(
                   width: double.infinity,
                   child: OutlinedButton(
-                    onPressed: () => context.read<OffersBloc>().add(OffersDeactivate(o.id)),
+                    onPressed: () => _confirmDeactivate(context, o),
                     style: OutlinedButton.styleFrom(
                       foregroundColor: AppColors.statusRejected,
                       side: BorderSide(color: AppColors.statusRejected.withValues(alpha: 0.3)),
@@ -201,6 +201,27 @@ class _OffersScreenState extends State<OffersScreen> {
           ),
           Expanded(
             child: Text(value, style: AppTextStyles.bodyMedium),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _confirmDeactivate(BuildContext context, Offer o) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Deactivate offer'),
+        content: Text('Are you sure you want to deactivate "${o.title}"?'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
+          ElevatedButton(
+            onPressed: () {
+              context.read<OffersBloc>().add(OffersDeactivate(o.id));
+              Navigator.pop(ctx);
+            },
+            style: ElevatedButton.styleFrom(backgroundColor: AppColors.statusRejected),
+            child: const Text('Deactivate'),
           ),
         ],
       ),
@@ -325,12 +346,7 @@ class _OfferDialogState extends State<_OfferDialog> {
         ),
         actions: [
           TextButton(
-            onPressed: _isSubmitting
-                ? null
-                : () {
-                    _didSubmit = true;
-                    Navigator.pop(context);
-                  },
+            onPressed: _isSubmitting ? null : () => Navigator.pop(context),
             child: const Text('Cancel'),
           ),
           ElevatedButton(

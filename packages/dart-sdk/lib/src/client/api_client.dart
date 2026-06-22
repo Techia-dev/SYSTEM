@@ -4,7 +4,8 @@ import 'package:http/http.dart' as http;
 class ApiException implements Exception {
   final String message;
   final int? statusCode;
-  const ApiException(this.message, {this.statusCode});
+  final Map<String, List<String>>? fields;
+  const ApiException(this.message, {this.statusCode, this.fields});
 
   @override
   String toString() => 'ApiException: $message (status: $statusCode)';
@@ -136,12 +137,28 @@ class ApiClient {
     final body = response.body.isNotEmpty ? jsonDecode(response.body) : null;
 
     if (response.statusCode >= 200 && response.statusCode < 300) {
-      // Auto-unwrap {success: true, data: ...} format used by the API
       if (body is Map && body['success'] == true && body.containsKey('data')) {
         return body['data'];
       }
       return body;
-    } else if (response.statusCode == 401) {
+    }
+
+    // Extract nested error: { success: false, error: { message, code, fields } }
+    String message;
+    Map<String, List<String>>? fields;
+    if (body is Map && body['error'] is Map) {
+      final err = body['error'] as Map;
+      message = (err['message'] as String?) ?? 'Request failed';
+      if (err['fields'] is Map) {
+        fields = (err['fields'] as Map).map(
+          (k, v) => MapEntry(k.toString(), (v as List).cast<String>()),
+        );
+      }
+    } else {
+      message = body?['message']?.toString() ?? 'Request failed';
+    }
+
+    if (response.statusCode == 401) {
       clearToken();
       onUnauthorized?.call();
       throw ApiException('Unauthorized. Please sign in again.', statusCode: 401);
@@ -150,10 +167,9 @@ class ApiClient {
     } else if (response.statusCode == 404) {
       throw ApiException('Resource not found.', statusCode: 404);
     } else if (response.statusCode >= 500) {
-      throw ApiException('Server error. Please try again.', statusCode: response.statusCode);
+      throw ApiException(message, statusCode: response.statusCode, fields: fields);
     } else {
-      final message = body?['message'] ?? body?['error'] ?? 'Request failed';
-      throw ApiException(message.toString(), statusCode: response.statusCode);
+      throw ApiException(message, statusCode: response.statusCode, fields: fields);
     }
   }
 

@@ -7,6 +7,12 @@ sealed class CommissionsEvent {}
 
 final class CommissionsLoad extends CommissionsEvent {}
 
+final class CommissionsUpdateStatus extends CommissionsEvent {
+  final String id;
+  final String status;
+  CommissionsUpdateStatus(this.id, this.status);
+}
+
 final class CommissionsClearError extends CommissionsEvent {}
 
 class CommissionsState {
@@ -47,6 +53,7 @@ class CommissionsBloc extends Bloc<CommissionsEvent, CommissionsState> {
       : _repository = repository ?? CommissionsRepository(apiClient: apiClient),
         super(CommissionsState()) {
     on<CommissionsLoad>(_onLoad);
+    on<CommissionsUpdateStatus>(_onUpdateStatus);
     on<CommissionsClearError>(_onClearError);
   }
 
@@ -60,6 +67,15 @@ class CommissionsBloc extends Bloc<CommissionsEvent, CommissionsState> {
         error: e.toString().replaceAll('ApiException: ', ''),
         isLoading: false,
       ));
+    }
+  }
+
+  Future<void> _onUpdateStatus(CommissionsUpdateStatus event, Emitter<CommissionsState> emit) async {
+    try {
+      await _repository.updateStatus(event.id, event.status);
+      add(CommissionsLoad());
+    } catch (e) {
+      emit(state.copyWith(error: e.toString().replaceAll('ApiException: ', '')));
     }
   }
 

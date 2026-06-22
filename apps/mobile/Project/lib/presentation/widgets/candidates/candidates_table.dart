@@ -172,6 +172,7 @@ class _CandidateCardState extends State<_CandidateCard> {
   }
 
   void _editCandidate(Candidate c) {
+    final formKey = GlobalKey<FormState>();
     final nameCtrl = TextEditingController(text: c.name);
     final phoneCtrl = TextEditingController(text: c.phone);
     final altPhoneCtrl = TextEditingController(text: c.alternativePhone ?? '');
@@ -180,6 +181,11 @@ class _CandidateCardState extends State<_CandidateCard> {
     final expCtrl = TextEditingController(text: c.experience ?? '');
     String level = _normalizeLevel(c.level);
 
+    bool validateEmail(String? v) {
+      if (v == null || v.isEmpty) return true;
+      return RegExp(r'^[^\s@]+@[^\s@]+\.[^\s@]+$').hasMatch(v);
+    }
+
     showDialog(
       context: context,
       builder: (ctx) => StatefulBuilder(
@@ -187,44 +193,54 @@ class _CandidateCardState extends State<_CandidateCard> {
           title: const Text('Edit candidate'),
           content: SizedBox(
             width: 360,
-            child: SingleChildScrollView(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  TextField(
-                      controller: nameCtrl,
-                      decoration: const InputDecoration(labelText: 'Full name')),
-                  const SizedBox(height: 12),
-                  TextField(
-                      controller: phoneCtrl,
-                      decoration: const InputDecoration(labelText: 'Phone')),
-                  const SizedBox(height: 12),
-                  TextField(
-                      controller: altPhoneCtrl,
-                      decoration: const InputDecoration(
-                        labelText: 'Alternative phone',
-                        hintText: 'Optional',
-                      )),
-                  const SizedBox(height: 12),
-                  TextField(
-                      controller: emailCtrl,
-                      decoration: const InputDecoration(labelText: 'Email')),
-                  const SizedBox(height: 12),
-                  DropdownButtonFormField<String>(
-                    initialValue: _levelMenuItems.any((i) => i.value == level) ? level : null,
-                    decoration: const InputDecoration(labelText: 'Level'),
-                    items: _levelMenuItems,
-                    onChanged: (v) => setState(() => level = v!),
-                  ),
-                  const SizedBox(height: 12),
-                  TextField(
-                      controller: qualCtrl,
-                      decoration: const InputDecoration(labelText: 'Qualification')),
-                  const SizedBox(height: 12),
-                  TextField(
-                      controller: expCtrl,
-                      decoration: const InputDecoration(labelText: 'Experience')),
-                ],
+            child: Form(
+              key: formKey,
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    TextFormField(
+                        controller: nameCtrl,
+                        decoration: const InputDecoration(labelText: 'Full name'),
+                        validator: (v) => (v == null || v.isEmpty) ? 'Required' : null),
+                    const SizedBox(height: 12),
+                    TextFormField(
+                        controller: phoneCtrl,
+                        decoration: const InputDecoration(labelText: 'Phone'),
+                        validator: (v) => (v == null || v.isEmpty) ? 'Required' : null),
+                    const SizedBox(height: 12),
+                    TextFormField(
+                        controller: altPhoneCtrl,
+                        decoration: const InputDecoration(
+                          labelText: 'Alternative phone',
+                          hintText: 'Optional',
+                        )),
+                    const SizedBox(height: 12),
+                    TextFormField(
+                        controller: emailCtrl,
+                        decoration: const InputDecoration(labelText: 'Email'),
+                        validator: (v) {
+                          if (v == null || v.isEmpty) return null;
+                          if (!validateEmail(v)) return 'Invalid email format';
+                          return null;
+                        }),
+                    const SizedBox(height: 12),
+                    DropdownButtonFormField<String>(
+                      initialValue: _levelMenuItems.any((i) => i.value == level) ? level : null,
+                      decoration: const InputDecoration(labelText: 'Level'),
+                      items: _levelMenuItems,
+                      onChanged: (v) => setState(() => level = v!),
+                    ),
+                    const SizedBox(height: 12),
+                    TextFormField(
+                        controller: qualCtrl,
+                        decoration: const InputDecoration(labelText: 'Qualification')),
+                    const SizedBox(height: 12),
+                    TextFormField(
+                        controller: expCtrl,
+                        decoration: const InputDecoration(labelText: 'Experience')),
+                  ],
+                ),
               ),
             ),
           ),
@@ -234,6 +250,7 @@ class _CandidateCardState extends State<_CandidateCard> {
                 child: const Text('Cancel')),
             ElevatedButton(
               onPressed: () {
+                if (!formKey.currentState!.validate()) return;
                 context.read<CandidatesBloc>().add(CandidatesUpdate(c.id, {
                       'name': nameCtrl.text,
                       'phone': phoneCtrl.text,

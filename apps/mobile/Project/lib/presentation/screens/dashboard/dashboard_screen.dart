@@ -66,48 +66,33 @@ class _DashboardScreenState extends State<DashboardScreen> {
     return LayoutBuilder(
       builder: (context, constraints) {
         final gap = constraints.maxWidth < 450 ? 8.0 : 12.0;
+        final useSingleRow = constraints.maxWidth >= 700;
 
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Row(children: [
-              Expanded(
-                child: DashboardStatCard(
-                  label: 'Commissions',
-                  // ected Commissions',
-                  value: '${totalPaid.toStringAsFixed(0)} EGP',
-                  subtitle: 'Total paid out',
-                ),
-              ),
-              SizedBox(width: gap),
-              Expanded(
-                child: DashboardStatCard(
-                  label: 'Active Offers',
-                  value: '$activeOffers',
-                  subtitle: 'Currently hiring',
-                ),
-              ),
-            ]),
-            SizedBox(height: gap),
-            Row(children: [
-              Expanded(
-                child: DashboardStatCard(
-                  label: 'Accepted',
-                  value: '$acceptedHired',
-                  subtitle: 'Candidates hired',
-                ),
-              ),
-              SizedBox(width: gap),
-              Expanded(
-                child: DashboardStatCard(
-                  label: 'Rejected',
-                  value: '$rejected',
-                  subtitle: 'Candidates declined',
-                ),
-              ),
-            ]),
-          ],
-        );
+        if (useSingleRow) {
+          return Row(children: [
+            Expanded(child: DashboardStatCard(label: 'Commissions', value: '${totalPaid.toStringAsFixed(0)} EGP', subtitle: 'Total paid out')),
+            SizedBox(width: gap),
+            Expanded(child: DashboardStatCard(label: 'Active Offers', value: '$activeOffers', subtitle: 'Currently hiring')),
+            SizedBox(width: gap),
+            Expanded(child: DashboardStatCard(label: 'Accepted', value: '$acceptedHired', subtitle: 'Candidates hired')),
+            SizedBox(width: gap),
+            Expanded(child: DashboardStatCard(label: 'Rejected', value: '$rejected', subtitle: 'Candidates declined')),
+          ]);
+        }
+
+        return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+          Row(children: [
+            Expanded(child: DashboardStatCard(label: 'Commissions', value: '${totalPaid.toStringAsFixed(0)} EGP', subtitle: 'Total paid out')),
+            SizedBox(width: gap),
+            Expanded(child: DashboardStatCard(label: 'Active Offers', value: '$activeOffers', subtitle: 'Currently hiring')),
+          ]),
+          SizedBox(height: gap),
+          Row(children: [
+            Expanded(child: DashboardStatCard(label: 'Accepted', value: '$acceptedHired', subtitle: 'Candidates hired')),
+            SizedBox(width: gap),
+            Expanded(child: DashboardStatCard(label: 'Rejected', value: '$rejected', subtitle: 'Candidates declined')),
+          ]),
+        ]);
       },
     );
   }

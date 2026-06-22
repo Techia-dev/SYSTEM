@@ -14,13 +14,30 @@ class CommissionsScreen extends StatefulWidget {
   State<CommissionsScreen> createState() => _CommissionsScreenState();
 }
 
-class _CommissionsScreenState extends State<CommissionsScreen> {
+class _CommissionsScreenState extends State<CommissionsScreen> with WidgetsBindingObserver {
+  bool _didInitialLoad = false;
+
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<CommissionsBloc>().add(CommissionsLoad());
+      _didInitialLoad = true;
     });
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed && _didInitialLoad) {
+      context.read<CommissionsBloc>().add(CommissionsLoad());
+    }
   }
 
   @override
@@ -53,7 +70,7 @@ class _CommissionsScreenState extends State<CommissionsScreen> {
                       OutlinedButton.icon(
                         onPressed: () => context.read<CommissionsBloc>().add(CommissionsLoad()),
                         icon: const Icon(Icons.refresh, size: 16),
-                        label: const Text('Retry'),
+                        label: const Text('Refresh'),
                       ),
                     ],
                   ),
@@ -122,10 +139,46 @@ class _CommissionsScreenState extends State<CommissionsScreen> {
               _detailRow(Icons.attach_money, 'Amount', '${c.amount.toStringAsFixed(0)} EGP'),
               _detailRow(Icons.calendar_today, 'Due date', formatDate(c.dueDate)),
               _detailRow(Icons.check_circle_outline, 'Earned', formatDate(c.earnedAt)),
+              if (c.status == 'pending') ...[
+                const SizedBox(height: 12),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton.icon(
+                    onPressed: () => _markAsPaid(c),
+                    icon: const Icon(Icons.check_circle_outline, size: 16),
+                    label: const Text('Mark as paid'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.accentEmerald,
+                      foregroundColor: Colors.white,
+                    ),
+                  ),
+                ),
+              ],
             ],
           ),
         );
       },
+    );
+  }
+
+  void _markAsPaid(Commission c) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Mark as paid'),
+        content: Text('Mark commission of ${c.amount.toStringAsFixed(0)} EGP for ${c.candidateName} as paid?'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
+          ElevatedButton(
+            onPressed: () {
+              context.read<CommissionsBloc>().add(CommissionsUpdateStatus(c.id, 'paid'));
+              Navigator.pop(ctx);
+            },
+            style: ElevatedButton.styleFrom(backgroundColor: AppColors.accentEmerald),
+            child: const Text('Mark paid'),
+          ),
+        ],
+      ),
     );
   }
 

@@ -72,7 +72,7 @@ class CandidatesRepository {
   }
 
   Future<Candidate> uploadCv(String id, String filePath) async {
-    final response = await _api.uploadFile('$_basePath/$id/upload-cv', filePath);
+    final response = await _api.uploadFile('$_basePath/$id/cv', filePath);
     return Candidate.fromJson(response as Map<String, dynamic>);
   }
 }
