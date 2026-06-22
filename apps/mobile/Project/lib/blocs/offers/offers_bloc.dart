@@ -129,19 +129,19 @@ class OffersBloc extends Bloc<OffersEvent, OffersState> {
   Future<void> _onCreate(OffersCreate event, Emitter<OffersState> emit) async {
     try {
       await _repository.create(event.data);
-      add(OffersLoad());
     } catch (e) {
       emit(state.copyWith(error: e.toString().replaceAll('ApiException: ', '')));
     }
+    add(OffersLoad());
   }
 
   Future<void> _onDeactivate(OffersDeactivate event, Emitter<OffersState> emit) async {
     try {
       await _repository.deactivate(event.id);
-      add(OffersLoad());
     } catch (e) {
       emit(state.copyWith(error: e.toString().replaceAll('ApiException: ', '')));
     }
+    add(OffersLoad());
   }
 
   void _onClearError(OffersClearError event, Emitter<OffersState> emit) {

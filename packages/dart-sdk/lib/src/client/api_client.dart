@@ -105,7 +105,13 @@ class ApiClient {
   Future<dynamic> delete(String path) async {
     try {
       final response = await _client
-          .delete(_buildUri(path), headers: _headers)
+          .delete(
+            _buildUri(path),
+            headers: {
+              'Accept': 'application/json',
+              if (_authToken != null) 'Authorization': 'Bearer $_authToken',
+            },
+          )
           .timeout(const Duration(seconds: 30));
       return _handleResponse(response);
     } on ApiException {

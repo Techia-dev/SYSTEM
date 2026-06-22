@@ -85,10 +85,10 @@ class ApplicationsBloc extends Bloc<ApplicationsEvent, ApplicationsState> {
   Future<void> _onCreate(ApplicationsCreate event, Emitter<ApplicationsState> emit) async {
     try {
       await _repository.create(event.data);
-      add(ApplicationsLoad());
     } catch (e) {
       emit(state.copyWith(error: e.toString().replaceAll('ApiException: ', '')));
     }
+    add(ApplicationsLoad());
   }
 
   Future<void> _onUpdateStatus(ApplicationsUpdateStatus event, Emitter<ApplicationsState> emit) async {

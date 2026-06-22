@@ -41,82 +41,92 @@ class _OffersScreenState extends State<OffersScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return BlocBuilder<OffersBloc, OffersState>(
-      builder: (context, state) {
-        final items = state.filteredItems;
+    return BlocListener<OffersBloc, OffersState>(
+      listenWhen: (prev, curr) =>
+          curr.error != null && curr.items.isNotEmpty,
+      listener: (context, state) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text(state.error!),
+          backgroundColor: Colors.red,
+        ));
+        context.read<OffersBloc>().add(OffersClearError());
+      },
+      child: BlocBuilder<OffersBloc, OffersState>(
+        builder: (context, state) {
+          final items = state.filteredItems;
 
-        return Scaffold(
-          backgroundColor: AppColors.bgPrimary,
-          body: SafeArea(
-            child: SingleChildScrollView(
-              padding: screenPadding(context),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
+          return Scaffold(
+            backgroundColor: AppColors.bgPrimary,
+            body: SafeArea(
+              child: SingleChildScrollView(
+                padding: screenPadding(context),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text('Offers', style: AppTextStyles.headlineLarge),
+                              const SizedBox(height: 4),
+                              Text('${items.length} offer${items.length == 1 ? '' : 's'}', style: AppTextStyles.bodySmall),
+                            ],
+                          ),
+                        ),
+                        ElevatedButton.icon(
+                          onPressed: () => _showNewOfferDialog(context),
+                          icon: const Icon(Icons.add, size: 16),
+                          label: const Text('New offer'),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 20),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: TextField(
+                            controller: _searchController,
+                            style: AppTextStyles.bodyMedium.copyWith(color: AppColors.textPrimary),
+                            decoration: const InputDecoration(
+                              hintText: 'Search title, company\u2026',
+                              prefixIcon: Icon(Icons.search, color: AppColors.textMuted, size: 18),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Row(
+                          mainAxisSize: MainAxisSize.min,
                           children: [
-                            Text('Offers', style: AppTextStyles.headlineLarge),
-                            const SizedBox(height: 4),
-                            Text('${items.length} offer${items.length == 1 ? '' : 's'}', style: AppTextStyles.bodySmall),
+                            Checkbox(
+                              value: state.showInactive,
+                              onChanged: (v) => context.read<OffersBloc>().add(OffersUpdateFilter(showInactive: v ?? false)),
+                              activeColor: AppColors.accentEmerald,
+                              visualDensity: VisualDensity.compact,
+                            ),
+                            Text('Show inactive', style: AppTextStyles.bodySmall),
                           ],
                         ),
-                      ),
-                      ElevatedButton.icon(
-                        onPressed: () => _showNewOfferDialog(context),
-                        icon: const Icon(Icons.add, size: 16),
-                        label: const Text('New offer'),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 20),
-                  // Search & Show inactive
-                  Row(
-                    children: [
-                      Expanded(
-                        child: TextField(
-                          controller: _searchController,
-                          style: AppTextStyles.bodyMedium.copyWith(color: AppColors.textPrimary),
-                          decoration: const InputDecoration(
-                            hintText: 'Search title, company\u2026',
-                            prefixIcon: Icon(Icons.search, color: AppColors.textMuted, size: 18),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Checkbox(
-                            value: state.showInactive,
-                            onChanged: (v) => context.read<OffersBloc>().add(OffersUpdateFilter(showInactive: v ?? false)),
-                            activeColor: AppColors.accentEmerald,
-                            visualDensity: VisualDensity.compact,
-                          ),
-                          Text('Show inactive', style: AppTextStyles.bodySmall),
-                        ],
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 20),
-                  if (state.isLoading)
-                    const Center(child: CircularProgressIndicator(color: AppColors.accentEmerald))
-                  else if (state.error != null)
-                    buildError(context, state.error!, () =>
-                        context.read<OffersBloc>().add(OffersLoad()))
-                  else if (items.isEmpty)
-                    buildEmpty('No offers found')
-                  else
-                    _buildTable(items),
-                ],
+                      ],
+                    ),
+                    const SizedBox(height: 20),
+                    if (state.isLoading)
+                      const Center(child: CircularProgressIndicator(color: AppColors.accentEmerald))
+                    else if (state.error != null && items.isEmpty)
+                      buildError(context, state.error!, () =>
+                          context.read<OffersBloc>().add(OffersLoad()))
+                    else if (items.isEmpty)
+                      buildEmpty('No offers found')
+                    else
+                      _buildTable(items),
+                  ],
+                ),
               ),
             ),
-          ),
-        );
-      },
+          );
+        },
+      ),
     );
   }
 

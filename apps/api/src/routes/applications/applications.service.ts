@@ -128,6 +128,10 @@ export class ApplicationsService {
         if (!application) {
             throw new NotFoundError("Application", id);
         }
+        const commission = await this.repository.findCommissionByApplicationId(id);
+        if (commission) {
+            await prisma.commission.delete({ where: { id: commission.id } });
+        }
         await this.repository.delete(id);
         return { message: "Application deleted" };
     }
