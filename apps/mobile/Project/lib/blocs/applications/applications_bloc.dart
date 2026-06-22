@@ -12,6 +12,17 @@ final class ApplicationsCreate extends ApplicationsEvent {
   ApplicationsCreate(this.data);
 }
 
+final class ApplicationsUpdateStatus extends ApplicationsEvent {
+  final String id;
+  final String status;
+  ApplicationsUpdateStatus(this.id, this.status);
+}
+
+final class ApplicationsDelete extends ApplicationsEvent {
+  final String id;
+  ApplicationsDelete(this.id);
+}
+
 final class ApplicationsClearError extends ApplicationsEvent {}
 
 class ApplicationsState {
@@ -53,6 +64,8 @@ class ApplicationsBloc extends Bloc<ApplicationsEvent, ApplicationsState> {
         super(ApplicationsState()) {
     on<ApplicationsLoad>(_onLoad);
     on<ApplicationsCreate>(_onCreate);
+    on<ApplicationsUpdateStatus>(_onUpdateStatus);
+    on<ApplicationsDelete>(_onDelete);
     on<ApplicationsClearError>(_onClearError);
   }
 
@@ -72,6 +85,24 @@ class ApplicationsBloc extends Bloc<ApplicationsEvent, ApplicationsState> {
   Future<void> _onCreate(ApplicationsCreate event, Emitter<ApplicationsState> emit) async {
     try {
       await _repository.create(event.data);
+    } catch (e) {
+      emit(state.copyWith(error: e.toString().replaceAll('ApiException: ', '')));
+    }
+    add(ApplicationsLoad());
+  }
+
+  Future<void> _onUpdateStatus(ApplicationsUpdateStatus event, Emitter<ApplicationsState> emit) async {
+    try {
+      await _repository.updateStatus(event.id, event.status);
+      add(ApplicationsLoad());
+    } catch (e) {
+      emit(state.copyWith(error: e.toString().replaceAll('ApiException: ', '')));
+    }
+  }
+
+  Future<void> _onDelete(ApplicationsDelete event, Emitter<ApplicationsState> emit) async {
+    try {
+      await _repository.delete(event.id);
       add(ApplicationsLoad());
     } catch (e) {
       emit(state.copyWith(error: e.toString().replaceAll('ApiException: ', '')));

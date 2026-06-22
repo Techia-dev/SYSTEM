@@ -9,6 +9,7 @@ import '../../screens/candidates/candidates_screen.dart';
 import '../../screens/offers/offers_screen.dart';
 import '../../screens/applications/applications_screen.dart';
 import '../../screens/commissions/commissions_screen.dart';
+import '../../../blocs/commissions/commissions_bloc.dart';
 
 class MainScaffold extends StatefulWidget {
   const MainScaffold({super.key});
@@ -20,6 +21,13 @@ class MainScaffold extends StatefulWidget {
 class _MainScaffoldState extends State<MainScaffold> {
   int _currentIndex = 0;
 
+  void _onTabChanged(int index) {
+    setState(() => _currentIndex = index);
+    if (index == 4) {
+      context.read<CommissionsBloc>().add(CommissionsLoad());
+    }
+  }
+
   final List<Widget> _screens = const [
     DashboardScreen(),
     CandidatesScreen(),
@@ -30,7 +38,7 @@ class _MainScaffoldState extends State<MainScaffold> {
 
   @override
   Widget build(BuildContext context) {
-    final screenWidth = MediaQuery.of(context).size.width;
+    final screenWidth = MediaQuery.sizeOf(context).width;
     final isDesktop = screenWidth >= 1024;
 
     return BlocListener<AuthBloc, AuthState>(
@@ -130,8 +138,9 @@ class _MainScaffoldState extends State<MainScaffold> {
                   icon: Icons.account_balance_wallet_outlined,
                   label: 'Commissions',
                   isSelected: _currentIndex == 4,
-                  onTap: () => setState(() => _currentIndex = 4),
+                  onTap: () => _onTabChanged(4),
                 ),
+                const SizedBox(height: 16),
               ],
             ),
           ),
@@ -162,7 +171,7 @@ class _MainScaffoldState extends State<MainScaffold> {
       ),
       child: BottomNavigationBar(
         currentIndex: _currentIndex,
-        onTap: (i) => setState(() => _currentIndex = i),
+        onTap: _onTabChanged,
         backgroundColor: AppColors.bgCard,
         selectedItemColor: AppColors.accentEmerald,
         unselectedItemColor: AppColors.textMuted,

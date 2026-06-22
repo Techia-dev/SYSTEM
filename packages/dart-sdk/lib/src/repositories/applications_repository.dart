@@ -30,7 +30,7 @@ class ApplicationsRepository {
   }
 
   Future<Application> updateStatus(String id, String status) async {
-    final response = await _api.patch('$_basePath/$id', body: {'status': status});
+    final response = await _api.put('$_basePath/$id/status', body: {'status': status});
     return Application.fromJson(response as Map<String, dynamic>);
   }
 

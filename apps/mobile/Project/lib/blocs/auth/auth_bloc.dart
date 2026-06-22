@@ -16,6 +16,8 @@ final class AuthLogin extends AuthEvent {
 
 final class AuthLogout extends AuthEvent {}
 
+final class AuthSessionExpired extends AuthEvent {}
+
 final class AuthClearError extends AuthEvent {}
 
 sealed class AuthState {}
@@ -42,10 +44,21 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
   AuthBloc({AuthRepository? repository})
       : _repository = repository ?? AuthRepository(apiClient: apiClient),
         super(AuthInitial()) {
+    ApiClient.onUnauthorized = _handleUnauthorized;
     on<AuthCheckSession>(_onCheckSession);
     on<AuthLogin>(_onLogin);
     on<AuthLogout>(_onLogout);
+    on<AuthSessionExpired>(_onSessionExpired);
     on<AuthClearError>(_onClearError);
+  }
+
+  Future<void> _handleUnauthorized() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove(AppConstants.keyAuthToken);
+    await prefs.remove(AppConstants.keyUserEmail);
+    if (state is AuthAuthenticated) {
+      add(AuthSessionExpired());
+    }
   }
 
   Future<void> _onCheckSession(AuthCheckSession event, Emitter<AuthState> emit) async {
@@ -56,11 +69,24 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       final email = prefs.getString(AppConstants.keyUserEmail);
       if (token != null && email != null) {
         apiClient.setToken(token);
-        emit(AuthAuthenticated(AuthSession(email: email, token: token, loginTime: DateTime.now())));
+        // Verify token is still valid on the server
+        final me = await _repository.getMe();
+        if (me != null) {
+          emit(AuthAuthenticated(AuthSession(email: email, token: token, loginTime: DateTime.now())));
+        } else {
+          await prefs.remove(AppConstants.keyAuthToken);
+          await prefs.remove(AppConstants.keyUserEmail);
+          apiClient.clearToken();
+          emit(AuthUnauthenticated());
+        }
       } else {
         emit(AuthUnauthenticated());
       }
     } catch (_) {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.remove(AppConstants.keyAuthToken);
+      await prefs.remove(AppConstants.keyUserEmail);
+      apiClient.clearToken();
       emit(AuthUnauthenticated());
     }
   }
@@ -88,6 +114,10 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove(AppConstants.keyAuthToken);
     await prefs.remove(AppConstants.keyUserEmail);
+    emit(AuthUnauthenticated());
+  }
+
+  void _onSessionExpired(AuthSessionExpired event, Emitter<AuthState> emit) {
     emit(AuthUnauthenticated());
   }
 

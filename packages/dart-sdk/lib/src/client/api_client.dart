@@ -4,7 +4,8 @@ import 'package:http/http.dart' as http;
 class ApiException implements Exception {
   final String message;
   final int? statusCode;
-  const ApiException(this.message, {this.statusCode});
+  final Map<String, List<String>>? fields;
+  const ApiException(this.message, {this.statusCode, this.fields});
 
   @override
   String toString() => 'ApiException: $message (status: $statusCode)';
@@ -14,6 +15,10 @@ class ApiClient {
   final String baseUrl;
   final http.Client _client;
   String? _authToken;
+
+  /// Called when a 401 response is received (token expired/invalid).
+  /// The AuthBloc sets this to trigger automatic logout.
+  static void Function()? onUnauthorized;
 
   ApiClient({required this.baseUrl, http.Client? client})
       : _client = client ?? http.Client();
@@ -100,8 +105,32 @@ class ApiClient {
   Future<dynamic> delete(String path) async {
     try {
       final response = await _client
-          .delete(_buildUri(path), headers: _headers)
+          .delete(
+            _buildUri(path),
+            headers: {
+              'Accept': 'application/json',
+              if (_authToken != null) 'Authorization': 'Bearer $_authToken',
+            },
+          )
           .timeout(const Duration(seconds: 30));
+      return _handleResponse(response);
+    } on ApiException {
+      rethrow;
+    } catch (e) {
+      throw ApiException('Network error: ${e.toString()}');
+    }
+  }
+
+  Future<dynamic> uploadFile(String path, String filePath) async {
+    try {
+      final uri = _buildUri(path);
+      final request = http.MultipartRequest('POST', uri);
+      if (_authToken != null) {
+        request.headers['Authorization'] = 'Bearer $_authToken';
+      }
+      request.files.add(await http.MultipartFile.fromPath('cv', filePath));
+      final streamed = await request.send().timeout(const Duration(seconds: 60));
+      final response = await http.Response.fromStream(streamed);
       return _handleResponse(response);
     } on ApiException {
       rethrow;
@@ -114,22 +143,39 @@ class ApiClient {
     final body = response.body.isNotEmpty ? jsonDecode(response.body) : null;
 
     if (response.statusCode >= 200 && response.statusCode < 300) {
-      // Auto-unwrap {success: true, data: ...} format used by the API
       if (body is Map && body['success'] == true && body.containsKey('data')) {
         return body['data'];
       }
       return body;
-    } else if (response.statusCode == 401) {
+    }
+
+    // Extract nested error: { success: false, error: { message, code, fields } }
+    String message;
+    Map<String, List<String>>? fields;
+    if (body is Map && body['error'] is Map) {
+      final err = body['error'] as Map;
+      message = (err['message'] as String?) ?? 'Request failed';
+      if (err['fields'] is Map) {
+        fields = (err['fields'] as Map).map(
+          (k, v) => MapEntry(k.toString(), (v as List).cast<String>()),
+        );
+      }
+    } else {
+      message = body?['message']?.toString() ?? 'Request failed';
+    }
+
+    if (response.statusCode == 401) {
+      clearToken();
+      onUnauthorized?.call();
       throw ApiException('Unauthorized. Please sign in again.', statusCode: 401);
     } else if (response.statusCode == 403) {
       throw ApiException('Access forbidden.', statusCode: 403);
     } else if (response.statusCode == 404) {
       throw ApiException('Resource not found.', statusCode: 404);
     } else if (response.statusCode >= 500) {
-      throw ApiException('Server error. Please try again.', statusCode: response.statusCode);
+      throw ApiException(message, statusCode: response.statusCode, fields: fields);
     } else {
-      final message = body?['message'] ?? body?['error'] ?? 'Request failed';
-      throw ApiException(message.toString(), statusCode: response.statusCode);
+      throw ApiException(message, statusCode: response.statusCode, fields: fields);
     }
   }
 

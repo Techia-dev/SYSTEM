@@ -70,4 +70,9 @@ class CandidatesRepository {
     final response = await _api.patch('$_basePath/$id/advance');
     return Candidate.fromJson(response as Map<String, dynamic>);
   }
+
+  Future<Candidate> uploadCv(String id, String filePath) async {
+    final response = await _api.uploadFile('$_basePath/$id/cv', filePath);
+    return Candidate.fromJson(response as Map<String, dynamic>);
+  }
 }

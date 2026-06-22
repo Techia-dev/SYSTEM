@@ -1,3 +1,4 @@
+export 'src/models/app_notification.dart';
 export 'src/models/candidate.dart';
 export 'src/models/application.dart';
 export 'src/models/offer.dart';
@@ -10,3 +11,4 @@ export 'src/repositories/candidates_repository.dart';
 export 'src/repositories/applications_repository.dart';
 export 'src/repositories/offers_repository.dart';
 export 'src/repositories/commissions_repository.dart';
+export 'src/repositories/notifications_repository.dart';
