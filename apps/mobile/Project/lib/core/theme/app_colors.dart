@@ -44,6 +44,10 @@ class AppColors {
   static const Color chartPaid = Color(0xFF3B82F6);
   static const Color chartPending = Color(0xFFD97706);
 
+  // Semantic aliases
+  static const Color error = statusRejected;
+  static const Color errorBg = Color(0xFFFEE2E2);
+
   // Level colors
   static const Color levelJunior = Color(0xFF059669);
   static const Color levelMid = Color(0xFF3B82F6);

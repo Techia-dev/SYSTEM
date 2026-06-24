@@ -29,8 +29,11 @@ dependencies:
   # File picker
   file_picker: ^8.0.0
 
-  # Icons (optional - Flutter has Material icons built in)
-  # cupertino_icons: ^1.0.8
+  # Routing
+  go_router: ^14.8.0
+
+  # Dependency injection
+  get_it: ^8.0.3
 
 flutter:
   uses-material-design: true

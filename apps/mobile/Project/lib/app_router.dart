@@ -1,31 +1,28 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:go_router/go_router.dart';
 import 'core/constants/app_routes.dart';
-import 'blocs/auth/auth_bloc.dart';
-import 'presentation/screens/auth/login_screen.dart';
-import 'presentation/widgets/navigation/main_scaffold.dart';
+import 'features/auth/bloc/auth_bloc.dart';
+import 'features/auth/presentation/screens/login_screen.dart';
+import 'shared/widgets/main_scaffold.dart';
 
-class AppRouter {
-  static Route<dynamic> generateRoute(RouteSettings settings) {
-    switch (settings.name) {
-      case AppRoutes.login:
-        return MaterialPageRoute(
-          builder: (_) => const LoginScreen(),
-          settings: settings,
-        );
-      case AppRoutes.dashboard:
-        return MaterialPageRoute(
-          builder: (_) => const MainScaffold(),
-          settings: settings,
-        );
-      default:
-        return MaterialPageRoute(
-          builder: (_) => const _SplashScreen(),
-          settings: settings,
-        );
-    }
-  }
-}
+final GoRouter appRouter = GoRouter(
+  initialLocation: AppRoutes.splash,
+  routes: [
+    GoRoute(
+      path: AppRoutes.splash,
+      builder: (_, __) => const _SplashScreen(),
+    ),
+    GoRoute(
+      path: AppRoutes.login,
+      builder: (_, __) => const LoginScreen(),
+    ),
+    GoRoute(
+      path: AppRoutes.dashboard,
+      builder: (_, __) => const MainScaffold(),
+    ),
+  ],
+);
 
 class _SplashScreen extends StatefulWidget {
   const _SplashScreen();
@@ -48,9 +45,9 @@ class _SplashScreenState extends State<_SplashScreen> {
     return BlocListener<AuthBloc, AuthState>(
       listener: (context, state) {
         if (state is AuthAuthenticated) {
-          Navigator.pushReplacementNamed(context, AppRoutes.dashboard);
+          context.go(AppRoutes.dashboard);
         } else if (state is AuthUnauthenticated) {
-          Navigator.pushReplacementNamed(context, AppRoutes.login);
+          context.go(AppRoutes.login);
         }
       },
       child: const Scaffold(
